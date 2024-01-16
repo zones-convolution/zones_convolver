@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/catch2-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/juce-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug/melatonin_audio_sparklines" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/cmake-build-debug/melatonin_test_helpers" vcs="Git" />
+  </component>
+</project>
