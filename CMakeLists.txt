@@ -64,15 +64,12 @@ function(SetupTests)
             juce::juce_recommended_config_flags
             juce::juce_recommended_lto_flags
             juce::juce_recommended_warning_flags
-            # JUCE_SILENCE_XCODE_15_LINKER_WARNING
-            -Wl,-ld_classic
     )
 
     target_compile_definitions(zones_convolver_tests
             PUBLIC
             JUCE_WEB_BROWSER=0
             JUCE_VST3_CAN_REPLACE_VST2=0
-            JUCE_SILENCE_XCODE_15_LINKER_WARNING=1
     )
 
     target_compile_options(zones_convolver_tests
