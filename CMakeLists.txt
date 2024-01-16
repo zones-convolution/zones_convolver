@@ -79,6 +79,9 @@ function(SetupTests)
             -Werror
             -Wpedantic
     )
+
+    include(${Catch2_SOURCE_DIR}/extras/Catch.cmake)
+    catch_discover_tests(zones_convolver_tests)
 endfunction()
 
 if (zones_convolver_IS_TOP_LEVEL)
