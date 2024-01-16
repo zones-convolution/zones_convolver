@@ -80,6 +80,7 @@ function(SetupTests)
             -Wpedantic
     )
 
+    target_compile_definitions(zones_convolver_tests PRIVATE PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
     include(${Catch2_SOURCE_DIR}/extras/Catch.cmake)
     catch_discover_tests(zones_convolver_tests)
 endfunction()
