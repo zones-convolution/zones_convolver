@@ -18,9 +18,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
       - name: Run CMake consuming CMakePreset.json
         uses: lukka/run-cmake@v10
         with:
           configurePreset: 'ninja-multi'
+          cmakeAppendedArgs: '-D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache'
           buildPreset: 'build-release'
           testPreset: 'test-release'
