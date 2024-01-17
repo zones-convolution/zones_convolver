@@ -4,6 +4,7 @@ add_executable(unit_tests)
 target_sources(unit_tests PRIVATE
         SplitBlockTests.cpp
         ComplexBufferTests.cpp
+        FFTDecompositionTests.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE
