@@ -43,5 +43,7 @@ SCENARIO ("can perform forward radix 2 decompositions", "[ForwardDecompositionRa
 
         for (auto point : input)
             std::cout << point << "\n";
+
+        REQUIRE (false);
     }
 }
