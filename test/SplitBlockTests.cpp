@@ -1,7 +1,6 @@
-#include <zones_convolver/ConvolverUtilities.h>
-
 #include <catch2/catch_test_macros.hpp>
 #include <melatonin_test_helpers/melatonin_test_helpers.h>
+#include <zones_convolver/util/SplitBlock.h>
 
 SCENARIO ("split blocks can be cleared", "[SplitBlock]")
 {

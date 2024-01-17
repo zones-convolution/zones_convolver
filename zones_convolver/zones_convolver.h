@@ -14,4 +14,7 @@ BEGIN_JUCE_MODULE_DECLARATION
 END_JUCE_MODULE_DECLARATION
 */
 
-#include "ConvolverUtilities.h"
+#include "util/CircularBuffer.h"
+#include "util/ComplexBuffer.h"
+#include "util/FrequencyDelayLine.h"
+#include "util/SplitBlock.h"

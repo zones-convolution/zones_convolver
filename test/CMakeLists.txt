@@ -2,7 +2,7 @@ enable_testing()
 
 add_executable(unit_tests)
 target_sources(unit_tests PRIVATE
-        ConvolverUtilitiesTests.cpp
+        SplitBlockTests.cpp
         ComplexBufferTests.cpp
 )
 
