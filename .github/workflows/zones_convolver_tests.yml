@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main ]
 
+env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 3
+
 jobs:
   build_and_test:
     runs-on: ubuntu-20.04
@@ -26,4 +29,5 @@ jobs:
           configurePreset: 'ninja-multi'
           configurePresetAdditionalArgs: "['-DCMAKE_C_COMPILER_LAUNCHER=ccache', '-DCMAKE_CXX_COMPILER_LAUNCHER=ccache']"
           buildPreset: 'build-release'
+          buildPresetAdditionalArgs: "['--parallel 4']"
           testPreset: 'test-release'
