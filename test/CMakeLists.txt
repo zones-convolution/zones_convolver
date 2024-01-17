@@ -30,6 +30,5 @@ target_compile_options(unit_tests
         -Wpedantic
 )
 
-include(CTest)
 include(Catch)
 catch_discover_tests(unit_tests)
