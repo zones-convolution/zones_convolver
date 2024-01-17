@@ -16,6 +16,8 @@ if (zones_convolver_IS_TOP_LEVEL)
     include(AddMelatonin)
 
     juce_add_module(zones_convolver)
+
+    enable_testing()
     add_subdirectory(test)
 else ()
     juce_add_module(zones_convolver)
