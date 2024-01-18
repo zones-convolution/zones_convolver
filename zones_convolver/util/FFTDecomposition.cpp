@@ -9,20 +9,21 @@ void FFTDecomposition::ForwardDecompositionRadix2 (std::complex<float> * data,
     jassert (num_steps > 0 && num_steps <= num_points && juce::isPowerOfTwo (num_steps));
     jassert (current_step < num_steps);
 
-    auto step_size = num_points / num_steps;
-    auto start_index = current_step * step_size;
-
     auto half_num_points = num_points / 2;
+    auto step_size = half_num_points / num_steps;
+    auto start_index = current_step * step_size;
     auto w_n = std::exp (std::complex<float> (
-        0.0, -(static_cast<float> (M_PI) * 2.0f) / static_cast<float> (num_points)));
+        0.0f, -juce::MathConstants<float>::twoPi / static_cast<float> (num_points)));
 
     for (auto point_index = start_index; point_index < start_index + step_size; ++point_index)
     {
+        jassert (half_num_points + point_index < num_points);
+
         auto point = data [point_index];
         data [point_index] += data [half_num_points + point_index];
         data [half_num_points + point_index] =
             (point - data [half_num_points + point_index]) *
-            std::pow (w_n, std::complex<float> {static_cast<float> (point_index), 0.0});
+            std::pow (w_n, std::complex<float> {static_cast<float> (point_index), 0.0f});
     }
 }
 
