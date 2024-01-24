@@ -27,6 +27,7 @@ namespace DecompositionSchedule
 
 struct DecompositionTask
 {
+    bool empty = false;
     int stage_index;
     int segment_index;
     int num_points;
@@ -34,16 +35,22 @@ struct DecompositionTask
     int current_step;
 };
 
-using DecompositionPlan = std::vector<DecompositionTask *>;
 using DecompositionFunction = void (*) (std::complex<float> * data,
                                         std::size_t num_points,
                                         std::size_t num_steps,
                                         std::size_t current_step);
 
-DecompositionPlan CreateDecompositionPlan (int block_size,
-                                           int partition_size,
-                                           int num_phases,
-                                           int decomposition_depth);
+using DecompositionPlan = std::vector<DecompositionTask>;
+
+DecompositionPlan CreateForwardDecompositionPlan (int block_size,
+                                                  int partition_size,
+                                                  int num_phases,
+                                                  int num_decompositions);
+
+DecompositionPlan CreateInverseDecompositionPlan (int block_size,
+                                                  int partition_size,
+                                                  int num_phases,
+                                                  int num_decompositions);
 
 /**
  * NEEDS LOTS OF TESTING!!! haha... rip...

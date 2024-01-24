@@ -16,6 +16,107 @@ void StageBuffers::PromoteStages ()
     head_position_ = (head_position_ + 1) % kNumStages;
 }
 
+DecompositionSchedule::DecompositionPlan
+DecompositionSchedule::CreateForwardDecompositionPlan (int block_size,
+                                                       int partition_size,
+                                                       int num_phases,
+                                                       int num_decompositions)
+{
+    jassert (juce::isPowerOfTwo (partition_size) && juce::isPowerOfTwo (block_size) &&
+             juce::isPowerOfTwo (num_phases));
+
+    DecompositionPlan plan;
+    for (auto phase = 0; phase < num_phases; ++phase)
+        plan.push_back ({.empty = true});
+
+    auto half_num_phases = num_phases / 2;
+    auto task_number = 0;
+
+    for (auto decomposition_depth = 1; decomposition_depth < num_decompositions;
+         ++decomposition_depth)
+    {
+        auto num_segments = static_cast<int> (std::pow (2, decomposition_depth));
+        auto num_points = partition_size / num_segments;
+        auto half_num_segments = num_segments / 2;
+
+        for (auto segment_index = 0; segment_index < half_num_segments; ++segment_index)
+        {
+            plan [task_number + half_num_phases] = DecompositionTask {
+                .empty = false,
+                .stage_index = StageBuffers::StageBuffer::kA,
+                .segment_index = segment_index,
+                .num_points = num_points,
+                .num_steps = 1,
+                .current_step = 0,
+            };
+
+            plan [task_number] = DecompositionTask {
+                .empty = false,
+                .stage_index = StageBuffers::StageBuffer::kB,
+                .segment_index = segment_index + half_num_segments,
+                .num_points = num_points,
+                .num_steps = 1,
+                .current_step = 0,
+            };
+
+            task_number += 1;
+        }
+    }
+
+    return plan;
+}
+
+DecompositionSchedule::DecompositionPlan
+DecompositionSchedule::CreateInverseDecompositionPlan (int block_size,
+                                                       int partition_size,
+                                                       int num_phases,
+                                                       int num_decompositions)
+{
+    jassert (juce::isPowerOfTwo (partition_size) && juce::isPowerOfTwo (block_size) &&
+             juce::isPowerOfTwo (num_phases));
+
+    DecompositionPlan plan;
+    for (auto phase = 0; phase < num_phases; ++phase)
+        plan.push_back ({.empty = true});
+
+    auto half_num_phases = num_phases / 2;
+    auto quarter_num_phases = num_phases / 4;
+    auto task_number = 0;
+
+    for (auto decomposition_depth = num_decompositions; decomposition_depth > 0;
+         --decomposition_depth)
+    {
+        auto num_segments = static_cast<int> (std::pow (2, decomposition_depth));
+        auto num_points = partition_size / num_segments;
+        auto half_num_segments = num_segments / 2;
+
+        for (auto segment_index = 0; segment_index < half_num_segments; ++segment_index)
+        {
+            plan [task_number + half_num_phases + quarter_num_phases] = DecompositionTask {
+                .empty = false,
+                .stage_index = StageBuffers::StageBuffer::kB,
+                .segment_index = segment_index,
+                .num_points = num_points,
+                .num_steps = 1,
+                .current_step = 0,
+            };
+
+            plan [task_number + quarter_num_phases] = DecompositionTask {
+                .empty = false,
+                .stage_index = StageBuffers::StageBuffer::kC,
+                .segment_index = segment_index + half_num_segments,
+                .num_points = num_points,
+                .num_steps = 1,
+                .current_step = 0,
+            };
+
+            task_number += 1;
+        }
+    }
+
+    return plan;
+}
+
 static inline void
 ExecuteDecompositionTask (DecompositionSchedule::DecompositionFunction decomposition_function,
                           const DecompositionSchedule::DecompositionTask & decomposition_task,
@@ -43,10 +144,10 @@ inline void DecompositionSchedule::ExecuteForwardDecompositionPlan (const Decomp
                                                  .current_step = phase_number},
                               stage_buffers);
 
-    auto task = plan [phase_number];
-    if (task != nullptr)
+    auto & task = plan [phase_number];
+    if (! task.empty)
         ExecuteDecompositionTask (
-            &FFTDecomposition::ForwardDecompositionRadix2, *task, stage_buffers);
+            &FFTDecomposition::ForwardDecompositionRadix2, task, stage_buffers);
 }
 
 inline void DecompositionSchedule::ExecuteInverseDecompositionPlan (
@@ -56,10 +157,10 @@ inline void DecompositionSchedule::ExecuteInverseDecompositionPlan (
     int num_phases,
     int phase_number)
 {
-    auto task = plan [phase_number];
-    if (task != nullptr)
+    auto & task = plan [phase_number];
+    if (! task.empty)
         ExecuteDecompositionTask (
-            &FFTDecomposition::InverseDecompositionRadix2, *task, stage_buffers);
+            &FFTDecomposition::InverseDecompositionRadix2, task, stage_buffers);
 
     ExecuteDecompositionTask (&FFTDecomposition::InverseDecompositionRadix2,
                               DecompositionTask {.stage_index = StageBuffers::StageBuffer::kC,
