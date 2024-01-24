@@ -16,6 +16,7 @@ END_JUCE_MODULE_DECLARATION
 
 #include "util/CircularBuffer.h"
 #include "util/ComplexBuffer.h"
+#include "util/DecompositionSchedule.h"
 #include "util/FFTDecomposition.h"
 #include "util/FrequencyDelayLine.h"
 #include "util/SplitBlock.h"
