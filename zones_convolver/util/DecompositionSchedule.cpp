@@ -17,24 +17,26 @@ void StageBuffers::PromoteStages ()
 }
 
 static inline void
-ExecuteDecompositionTask (const DecompositionSchedule::DecompositionTask & decomposition_task,
+ExecuteDecompositionTask (DecompositionSchedule::DecompositionFunction decomposition_function,
+                          const DecompositionSchedule::DecompositionTask & decomposition_task,
                           StageBuffers & stage_buffers)
 {
     auto stage = stage_buffers.GetStage (decomposition_task.stage_index);
     auto segment_offset = decomposition_task.segment_index * decomposition_task.num_points;
-    FFTDecomposition::ForwardDecompositionRadix2 (&stage->GetWritePointer (0) [segment_offset],
-                                                  decomposition_task.num_points,
-                                                  decomposition_task.num_steps,
-                                                  decomposition_task.current_step);
+    decomposition_function (&stage->GetWritePointer (0) [segment_offset],
+                            decomposition_task.num_points,
+                            decomposition_task.num_steps,
+                            decomposition_task.current_step);
 }
 
-void DecompositionSchedule::ExecuteForwardDecompositionPlan (const DecompositionPlan & plan,
-                                                             StageBuffers & stage_buffers,
-                                                             int num_points,
-                                                             int num_phases,
-                                                             int phase_number)
+inline void DecompositionSchedule::ExecuteForwardDecompositionPlan (const DecompositionPlan & plan,
+                                                                    StageBuffers & stage_buffers,
+                                                                    int num_points,
+                                                                    int num_phases,
+                                                                    int phase_number)
 {
-    ExecuteDecompositionTask (DecompositionTask {.stage_index = 0,
+    ExecuteDecompositionTask (&FFTDecomposition::ForwardDecompositionRadix2,
+                              DecompositionTask {.stage_index = StageBuffers::StageBuffer::kA,
                                                  .segment_index = 0,
                                                  .num_points = num_points,
                                                  .num_steps = num_phases,
@@ -43,5 +45,27 @@ void DecompositionSchedule::ExecuteForwardDecompositionPlan (const Decomposition
 
     auto task = plan [phase_number];
     if (task != nullptr)
-        ExecuteDecompositionTask (*task, stage_buffers);
+        ExecuteDecompositionTask (
+            &FFTDecomposition::ForwardDecompositionRadix2, *task, stage_buffers);
+}
+
+inline void DecompositionSchedule::ExecuteInverseDecompositionPlan (
+    const DecompositionSchedule::DecompositionPlan & plan,
+    StageBuffers & stage_buffers,
+    int num_points,
+    int num_phases,
+    int phase_number)
+{
+    auto task = plan [phase_number];
+    if (task != nullptr)
+        ExecuteDecompositionTask (
+            &FFTDecomposition::InverseDecompositionRadix2, *task, stage_buffers);
+
+    ExecuteDecompositionTask (&FFTDecomposition::InverseDecompositionRadix2,
+                              DecompositionTask {.stage_index = StageBuffers::StageBuffer::kC,
+                                                 .segment_index = 0,
+                                                 .num_points = num_points,
+                                                 .num_steps = num_phases,
+                                                 .current_step = phase_number},
+                              stage_buffers);
 }

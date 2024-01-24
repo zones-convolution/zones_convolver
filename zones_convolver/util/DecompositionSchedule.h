@@ -5,6 +5,13 @@
 class StageBuffers
 {
 public:
+    enum StageBuffer
+    {
+        kA = 0,
+        kB = 1,
+        kC = 2
+    };
+
     explicit StageBuffers (int num_points);
     [[nodiscard]] ComplexBuffer * GetStage (int stage);
     void PromoteStages ();
@@ -28,10 +35,28 @@ struct DecompositionTask
 };
 
 using DecompositionPlan = std::vector<DecompositionTask *>;
-void ExecuteForwardDecompositionPlan (const DecompositionPlan & plan,
-                                      StageBuffers & stage_buffers,
-                                      int num_points,
-                                      int num_phases,
-                                      int phase_number);
+using DecompositionFunction = void (*) (std::complex<float> * data,
+                                        std::size_t num_points,
+                                        std::size_t num_steps,
+                                        std::size_t current_step);
 
+DecompositionPlan CreateDecompositionPlan (int block_size,
+                                           int partition_size,
+                                           int num_phases,
+                                           int decomposition_depth);
+
+/**
+ * NEEDS LOTS OF TESTING!!! haha... rip...
+ */
+inline void ExecuteForwardDecompositionPlan (const DecompositionPlan & plan,
+                                             StageBuffers & stage_buffers,
+                                             int num_points,
+                                             int num_phases,
+                                             int phase_number);
+
+inline void ExecuteInverseDecompositionPlan (const DecompositionPlan & plan,
+                                             StageBuffers & stage_buffers,
+                                             int num_points,
+                                             int num_phases,
+                                             int phase_number);
 }
