@@ -17,13 +17,11 @@ void StageBuffers::PromoteStages ()
 }
 
 DecompositionSchedule::DecompositionPlan
-DecompositionSchedule::CreateForwardDecompositionPlan (int block_size,
-                                                       int partition_size,
+DecompositionSchedule::CreateForwardDecompositionPlan (int partition_size,
                                                        int num_phases,
                                                        int num_decompositions)
 {
-    jassert (juce::isPowerOfTwo (partition_size) && juce::isPowerOfTwo (block_size) &&
-             juce::isPowerOfTwo (num_phases));
+    jassert (juce::isPowerOfTwo (partition_size) && juce::isPowerOfTwo (num_phases));
 
     DecompositionPlan plan;
     for (auto phase = 0; phase < num_phases; ++phase)
@@ -67,13 +65,11 @@ DecompositionSchedule::CreateForwardDecompositionPlan (int block_size,
 }
 
 DecompositionSchedule::DecompositionPlan
-DecompositionSchedule::CreateInverseDecompositionPlan (int block_size,
-                                                       int partition_size,
+DecompositionSchedule::CreateInverseDecompositionPlan (int partition_size,
                                                        int num_phases,
                                                        int num_decompositions)
 {
-    jassert (juce::isPowerOfTwo (partition_size) && juce::isPowerOfTwo (block_size) &&
-             juce::isPowerOfTwo (num_phases));
+    jassert (juce::isPowerOfTwo (partition_size) && juce::isPowerOfTwo (num_phases));
 
     DecompositionPlan plan;
     for (auto phase = 0; phase < num_phases; ++phase)

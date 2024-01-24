@@ -42,15 +42,11 @@ using DecompositionFunction = void (*) (std::complex<float> * data,
 
 using DecompositionPlan = std::vector<DecompositionTask>;
 
-DecompositionPlan CreateForwardDecompositionPlan (int block_size,
-                                                  int partition_size,
-                                                  int num_phases,
-                                                  int num_decompositions);
+DecompositionPlan
+CreateForwardDecompositionPlan (int partition_size, int num_phases, int num_decompositions);
 
-DecompositionPlan CreateInverseDecompositionPlan (int block_size,
-                                                  int partition_size,
-                                                  int num_phases,
-                                                  int num_decompositions);
+DecompositionPlan
+CreateInverseDecompositionPlan (int partition_size, int num_phases, int num_decompositions);
 
 /**
  * NEEDS LOTS OF TESTING!!! haha... rip...
