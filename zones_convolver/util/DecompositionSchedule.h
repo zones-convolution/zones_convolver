@@ -48,18 +48,22 @@ CreateForwardDecompositionPlan (int partition_size, int num_phases, int num_deco
 DecompositionPlan
 CreateInverseDecompositionPlan (int partition_size, int num_phases, int num_decompositions);
 
+void ExecuteDecompositionTask (DecompositionSchedule::DecompositionFunction decomposition_function,
+                               const DecompositionSchedule::DecompositionTask & decomposition_task,
+                               StageBuffers & stage_buffers);
+
 /**
  * NEEDS LOTS OF TESTING!!! haha... rip...
  */
-inline void ExecuteForwardDecompositionPlan (const DecompositionPlan & plan,
-                                             StageBuffers & stage_buffers,
-                                             int num_points,
-                                             int num_phases,
-                                             int phase_number);
+void ExecuteForwardDecompositionPlan (const DecompositionPlan & plan,
+                                      StageBuffers & stage_buffers,
+                                      int num_points,
+                                      int num_phases,
+                                      int phase_number);
 
-inline void ExecuteInverseDecompositionPlan (const DecompositionPlan & plan,
-                                             StageBuffers & stage_buffers,
-                                             int num_points,
-                                             int num_phases,
-                                             int phase_number);
+void ExecuteInverseDecompositionPlan (const DecompositionPlan & plan,
+                                      StageBuffers & stage_buffers,
+                                      int num_points,
+                                      int num_phases,
+                                      int phase_number);
 }

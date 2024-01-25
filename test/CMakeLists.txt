@@ -4,6 +4,7 @@ target_sources(unit_tests PRIVATE
         ComplexBufferTests.cpp
         FFTDecompositionTests.cpp
         DecompositionScheduleTests.cpp
+        LambdaPtrConverter.h
 )
 
 target_link_libraries(unit_tests PRIVATE
