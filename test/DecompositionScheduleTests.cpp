@@ -90,4 +90,37 @@ SCENARIO ("can create forward decomposition plan", "[DecompositionSchedule]")
             }
         }
     }
+
+    WHEN ("a plan is created for a 4 phase schedule with 2 decompositions")
+    {
+        auto plan = DecompositionSchedule::CreateForwardDecompositionPlan (16, 8, 2);
+        THEN ("the plan should contain tasks in the 0th and 4th phases")
+        {
+            REQUIRE (plan.size () == 8);
+            REQUIRE (! plan [0].empty);
+            REQUIRE (! plan [4].empty);
+
+            REQUIRE (plan [1].empty);
+            REQUIRE (plan [2].empty);
+            REQUIRE (plan [3].empty);
+            REQUIRE (plan [5].empty);
+            REQUIRE (plan [6].empty);
+            REQUIRE (plan [7].empty);
+
+            REQUIRE (plan [0].stage_index == 1);
+            REQUIRE (plan [0].segment_index == 1);
+            REQUIRE (plan [0].num_points == 8);
+            REQUIRE (plan [0].num_steps == 1);
+            REQUIRE (plan [0].current_step == 0);
+
+            REQUIRE (plan [4].stage_index == 0);
+            REQUIRE (plan [4].segment_index == 0);
+            REQUIRE (plan [4].num_points == 8);
+            REQUIRE (plan [4].num_steps == 1);
+            REQUIRE (plan [4].current_step == 0);
+        }
+    }
+
+    //    WHEN ("plans can be created for maximally decomposed")
+    //    WHEN ("plans can be created for capped decomposition")
 }
