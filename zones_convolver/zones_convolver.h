@@ -14,6 +14,7 @@ BEGIN_JUCE_MODULE_DECLARATION
 END_JUCE_MODULE_DECLARATION
 */
 
+#include "TimeDistributedUPC.h"
 #include "util/CircularBuffer.h"
 #include "util/ComplexBuffer.h"
 #include "util/DecompositionSchedule.h"

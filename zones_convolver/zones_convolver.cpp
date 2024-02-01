@@ -1,5 +1,6 @@
 #include "zones_convolver.h"
 
+#include "TimeDistributedUPC.cpp"
 #include "util/CircularBuffer.cpp"
 #include "util/ComplexBuffer.cpp"
 #include "util/DecompositionSchedule.cpp"
