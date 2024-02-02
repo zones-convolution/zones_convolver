@@ -4,6 +4,9 @@ StageBuffers::StageBuffers (int num_points)
 {
     for (auto stage_index = 0; stage_index < kNumStages; ++stage_index)
         stages_.emplace_back (num_points, 1);
+
+    for (auto & stage : stages_)
+        stage.Clear ();
 }
 
 ComplexBuffer * StageBuffers::GetStage (int stage)

@@ -23,6 +23,9 @@ private:
     int partition_size_samples_;
     int fft_num_points_;
 
+    int num_phases_;
+    int phase_;
+
     std::vector<ComplexBuffer> filter_partitions_;
     std::unique_ptr<FrequencyDelayLine> frequency_delay_line_;
 
