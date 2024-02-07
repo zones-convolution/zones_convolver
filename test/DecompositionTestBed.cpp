@@ -15,6 +15,7 @@ juce::AudioBuffer<float> CreateInputBuffer (int input_size)
 {
     juce::AudioBuffer<float> input_buffer {1, input_size};
     for (auto sample_index = 0; sample_index < kInputSize; ++sample_index)
+
         input_buffer.setSample (0, sample_index, static_cast<float> (sample_index));
 
     return input_buffer;
@@ -204,19 +205,26 @@ TEST_CASE ("decomposing a 16b partition")
                 case 2:
                     HandleStageC (kBlockSize, input_buffer, stage_buffers, phase);
 
-                    if (phase == 15)
+                    ComplexBuffer test_fft_data {kFFTSize, 1};
+                    test_fft_data.Clear ();
+
+                    test_fft_data.CopyFromAudioBlock (input_buffer);
+                    auto test_fft_data_ptr = test_fft_data.GetWritePointer (0);
+                    ForwardFFTUnordered (test_fft_data_ptr, kFFTSize);
+                    InverseFFTUnordered (test_fft_data_ptr, kFFTSize);
+
+                    auto stage_c = stage_buffers.GetStage (StageBuffers::StageBuffer::kC);
+                    auto stage_c_ptr = stage_c->GetWritePointer (0);
+
+                    auto starting_index = phase * kBlockSize;
+                    for (auto sample_index = starting_index;
+                         sample_index < starting_index + kBlockSize;
+                         ++sample_index)
+                        REQUIRE (ApproximatelyEqualComplex (stage_c_ptr [sample_index],
+                                                            test_fft_data_ptr [sample_index]));
+
+                    if (phase == kBlockSize - 1)
                     {
-                        ComplexBuffer test_fft_data {kFFTSize, 1};
-                        test_fft_data.Clear ();
-
-                        test_fft_data.CopyFromAudioBlock (input_buffer);
-                        auto test_fft_data_ptr = test_fft_data.GetWritePointer (0);
-                        ForwardFFTUnordered (test_fft_data_ptr, kFFTSize);
-                        InverseFFTUnordered (test_fft_data_ptr, kFFTSize);
-
-                        auto stage_c = stage_buffers.GetStage (StageBuffers::StageBuffer::kC);
-                        auto stage_c_ptr = stage_c->GetWritePointer (0);
-
                         for (auto sample_index = 0; sample_index < kFFTSize; ++sample_index)
                             REQUIRE (ApproximatelyEqualComplex (stage_c_ptr [sample_index],
                                                                 test_fft_data_ptr [sample_index]));
