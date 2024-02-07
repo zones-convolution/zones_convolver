@@ -1,4 +1,4 @@
-add_executable(unit_tests ../zones_convolver/util/FFT.cpp)
+add_executable(unit_tests ../zones_convolver/util/FFT.cpp DecompositionTestBed.cpp)
 target_sources(unit_tests PRIVATE
         SplitBlockTests.cpp
         ComplexBufferTests.cpp
@@ -8,6 +8,7 @@ target_sources(unit_tests PRIVATE
         LambdaPtrConverter.h
         TestUtils.h
         TestUtils.cpp
+        DecompositionTestBed.cpp
         )
 
 target_link_libraries(unit_tests PRIVATE
