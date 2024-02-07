@@ -21,3 +21,4 @@ END_JUCE_MODULE_DECLARATION
 #include "util/FFTDecomposition.h"
 #include "util/FrequencyDelayLine.h"
 #include "util/SplitBlock.h"
+#include "util/TimeDomainConvolver.h"

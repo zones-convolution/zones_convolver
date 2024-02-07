@@ -1,11 +1,12 @@
 #include "TestUtils.h"
 #include "zones_convolver/util/DecompositionSchedule.h"
 #include "zones_convolver/util/FFT.h"
+#include "zones_convolver/util/TimeDomainConvolver.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
 
-static constexpr auto kBlockSize = 4096;
+static constexpr auto kBlockSize = 2;
 static constexpr auto kNumBlocks = 16;
 
 static constexpr auto kInputSize = kBlockSize * kNumBlocks;
@@ -223,12 +224,96 @@ TEST_CASE ("decomposing a 16b partition")
                         REQUIRE (ApproximatelyEqualComplex (stage_c_ptr [sample_index],
                                                             test_fft_data_ptr [sample_index]));
 
-                    if (phase == kBlockSize - 1)
+                    if (phase == 15)
                     {
                         for (auto sample_index = 0; sample_index < kFFTSize; ++sample_index)
                             REQUIRE (ApproximatelyEqualComplex (stage_c_ptr [sample_index],
                                                                 test_fft_data_ptr [sample_index]));
                     }
+                    break;
+            }
+        }
+    }
+}
+
+juce::AudioBuffer<float> CreateTestIrBuffer ()
+{
+    juce::AudioBuffer<float> ir_buffer {1, kInputSize};
+    for (auto sample_index = 0; sample_index < kInputSize; ++sample_index)
+        ir_buffer.setSample (0, sample_index, std::sin (static_cast<float> (sample_index) * 0.1f));
+
+    return ir_buffer;
+}
+
+TEST_CASE ("decomposing a 16b partition with conv")
+{
+    auto input_buffer = CreateInputBuffer (kInputSize);
+    auto ir_buffer = CreateTestIrBuffer ();
+
+    StageBuffers stage_buffers {kFFTSize};
+
+    ComplexBuffer transformed_ir {kFFTSize, 1};
+    transformed_ir.Clear ();
+    transformed_ir.CopyFromAudioBlock (ir_buffer);
+    ForwardFFTUnordered (transformed_ir.GetWritePointer (0), kFFTSize);
+    auto transformed_ir_ptr = transformed_ir.GetWritePointer (0);
+
+    //    TimeDomainConvolver time_domain_convolver;
+    //    juce::dsp::ProcessSpec spec {44100, kInputSize, 1};
+    //    time_domain_convolver.prepare (spec);
+    //    time_domain_convolver.LoadImpulseResponse (ir_buffer, 44100);
+    //
+    //    auto time_domain_buffer = CreateInputBuffer (kInputSize);
+    //    juce::dsp::AudioBlock<float> time_domain_block;
+    //    juce::dsp::ProcessContextReplacing<float> context {time_domain_block};
+    //    time_domain_convolver.process (context);
+
+    for (auto stage = 0; stage < 3; ++stage)
+    {
+        stage_buffers.PromoteStages ();
+
+        for (auto phase = 0; phase < kNumBlocks; ++phase)
+        {
+            switch (stage)
+            {
+                case 0:
+                    HandleStageA (kBlockSize, input_buffer, stage_buffers, phase);
+                    break;
+                case 1:
+                    {
+                        auto stage_b = stage_buffers.GetStage (StageBuffers::StageBuffer::kB);
+                        auto stage_b_ptr = stage_b->GetWritePointer (0);
+
+                        auto sub_fft_size = kFFTSize / (static_cast<int> (std::pow (2, 3)));
+
+                        if (phase % 2 == 0)
+                        {
+                            auto sub_fft_data =
+                                &stage_b->GetWritePointer (0) [(phase / 2) * sub_fft_size];
+
+                            ForwardFFTUnordered (sub_fft_data, sub_fft_size);
+                        }
+
+                        auto half_sub_fft_size = sub_fft_size / 2;
+                        auto offset = (phase * half_sub_fft_size);
+                        for (auto point_index = 0; point_index < half_sub_fft_size; ++point_index)
+                        {
+                            auto point = stage_b_ptr [offset + point_index];
+                            auto ir_point = transformed_ir_ptr [offset + point_index];
+
+                            stage_b_ptr [offset + point_index] = point * ir_point;
+                        }
+
+                        if (phase % 2 != 0)
+                        {
+                            auto sub_fft_data =
+                                &stage_b->GetWritePointer (0) [((phase / 2) - 1) * sub_fft_size];
+                            InverseFFTUnordered (sub_fft_data, sub_fft_size);
+                        }
+                    }
+                    break;
+                case 2:
+                    HandleStageC (kBlockSize, input_buffer, stage_buffers, phase);
                     break;
             }
         }

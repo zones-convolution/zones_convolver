@@ -1,4 +1,4 @@
-add_executable(unit_tests ../zones_convolver/util/FFT.cpp DecompositionTestBed.cpp)
+add_executable(unit_tests)
 target_sources(unit_tests PRIVATE
         SplitBlockTests.cpp
         ComplexBufferTests.cpp

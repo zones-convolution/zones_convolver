@@ -7,3 +7,4 @@
 #include "util/FFTDecomposition.cpp"
 #include "util/FrequencyDelayLine.cpp"
 #include "util/SplitBlock.cpp"
+#include "util/TimeDomainConvolver.cpp"
