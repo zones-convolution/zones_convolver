@@ -11,7 +11,27 @@ StageBuffers::StageBuffers (int num_points)
 
 ComplexBuffer * StageBuffers::GetStage (int stage)
 {
-    return &stages_ [(head_position_ + stage) % kNumStages];
+    // return &stages_ [(head_position_ + stage) % kNumStages];
+
+    // headpos: 0, stage: A -> index 0 | stage: C -> index 1 | stage: B -> index 2
+    // headpos: 1, stage: B -> index 0 | stage: A -> index 1 | stage: C -> index 2
+    // headpos: 2, stage: C -> index 0 | stage: B -> index 1 | stage: A -> index 2
+
+    if (stage == 0)
+        return &stages_ [head_position_];
+
+    if (stage == 1)
+    {
+        auto index = head_position_ == 0 ? 2 : (head_position_ - 1);
+        return &stages_ [index];
+    }
+
+    if (stage == 2)
+        return &stages_ [(head_position_ + 1) % kNumStages];
+
+    // 0(A) -> headpos
+    // 1(B) -> headpos == 0 ? 2 : headpos -1
+    // 2 (c)-> (headpos  +  1) % knumstages
 }
 
 void StageBuffers::PromoteStages ()
