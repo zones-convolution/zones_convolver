@@ -6,7 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
 
-static constexpr auto kBlockSize = 2;
+static constexpr auto kBlockSize = 256;
 static constexpr auto kNumBlocks = 16;
 
 static constexpr auto kInputSize = kBlockSize * kNumBlocks;
@@ -258,15 +258,15 @@ TEST_CASE ("decomposing a 16b partition with conv")
     ForwardFFTUnordered (transformed_ir.GetWritePointer (0), kFFTSize);
     auto transformed_ir_ptr = transformed_ir.GetWritePointer (0);
 
-    //    TimeDomainConvolver time_domain_convolver;
-    //    juce::dsp::ProcessSpec spec {44100, kInputSize, 1};
-    //    time_domain_convolver.prepare (spec);
-    //    time_domain_convolver.LoadImpulseResponse (ir_buffer, 44100);
-    //
-    //    auto time_domain_buffer = CreateInputBuffer (kInputSize);
-    //    juce::dsp::AudioBlock<float> time_domain_block;
-    //    juce::dsp::ProcessContextReplacing<float> context {time_domain_block};
-    //    time_domain_convolver.process (context);
+    TimeDomainConvolver time_domain_convolver;
+    juce::dsp::ProcessSpec spec {44100, kInputSize, 1};
+    time_domain_convolver.prepare (spec);
+    time_domain_convolver.LoadImpulseResponse (ir_buffer, 44100);
+
+    auto time_domain_convolution_buffer = CreateInputBuffer (kInputSize);
+    juce::dsp::AudioBlock<float> time_domain_convolution_block {time_domain_convolution_buffer};
+    juce::dsp::ProcessContextReplacing<float> context {time_domain_convolution_block};
+    time_domain_convolver.process (context);
 
     for (auto stage = 0; stage < 3; ++stage)
     {
@@ -283,14 +283,11 @@ TEST_CASE ("decomposing a 16b partition with conv")
                     {
                         auto stage_b = stage_buffers.GetStage (StageBuffers::StageBuffer::kB);
                         auto stage_b_ptr = stage_b->GetWritePointer (0);
-
                         auto sub_fft_size = kFFTSize / (static_cast<int> (std::pow (2, 3)));
 
                         if (phase % 2 == 0)
                         {
-                            auto sub_fft_data =
-                                &stage_b->GetWritePointer (0) [(phase / 2) * sub_fft_size];
-
+                            auto sub_fft_data = &stage_b_ptr [(phase / 2) * sub_fft_size];
                             ForwardFFTUnordered (sub_fft_data, sub_fft_size);
                         }
 
@@ -306,14 +303,31 @@ TEST_CASE ("decomposing a 16b partition with conv")
 
                         if (phase % 2 != 0)
                         {
-                            auto sub_fft_data =
-                                &stage_b->GetWritePointer (0) [((phase / 2) - 1) * sub_fft_size];
+                            auto sub_fft_data = &stage_b_ptr [((phase - 1) / 2) * sub_fft_size];
                             InverseFFTUnordered (sub_fft_data, sub_fft_size);
                         }
                     }
                     break;
                 case 2:
                     HandleStageC (kBlockSize, input_buffer, stage_buffers, phase);
+
+                    auto stage_c = stage_buffers.GetStage (StageBuffers::StageBuffer::kC);
+                    auto stage_c_ptr = stage_c->GetWritePointer (0);
+                    auto starting_index = phase * kBlockSize;
+
+                    auto tolerance = juce::Tolerance<float> ().withRelative (1.f);
+
+                    // TEST CONV RESULT
+                    for (auto sample_index = starting_index;
+                         sample_index < starting_index + kBlockSize;
+                         ++sample_index)
+                    {
+                        auto stage_c_sample = stage_c_ptr [sample_index].real ();
+                        auto time_domain_convolver_sample =
+                            time_domain_convolution_block.getSample (0, sample_index);
+                        REQUIRE (juce::approximatelyEqual (
+                            stage_c_sample, time_domain_convolver_sample, tolerance));
+                    }
                     break;
             }
         }

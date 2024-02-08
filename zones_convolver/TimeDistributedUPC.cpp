@@ -44,15 +44,32 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
         auto stage_a =
             stage_buffers_->GetStage (StageBuffers::StageBuffer::kA)->GetWritePointer (0);
         for (auto sample_index = 0; sample_index < block_size; ++sample_index)
-            stage_a [phase_ * block_size] =
+            stage_a [(phase_ * block_size) + sample_index] =
                 std::complex<float> {output_block.getSample (0, sample_index), 0.f};
     }
 
     DecompositionSchedule::ExecuteForwardDecompositionPlan (
         forward_decomposition_plan_, *stage_buffers_, fft_num_points_, num_phases_, phase_);
 
+    // Forward FFT
+
+    // Convolve
+
+    // Inverse FFT
+    
     DecompositionSchedule::ExecuteInverseDecompositionPlan (
         forward_decomposition_plan_, *stage_buffers_, fft_num_points_, num_phases_, phase_);
+
+    /**
+     * FILL OUTPUT BUFFER -> Move to function??
+     */
+    {
+        auto stage_c =
+            stage_buffers_->GetStage (StageBuffers::StageBuffer::kC)->GetWritePointer (0);
+        for (auto sample_index = 0; sample_index < block_size; ++sample_index)
+            output_block.setSample (
+                0, sample_index, stage_c [(phase_ * block_size) + sample_index].real ());
+    }
 
     phase_ = (phase_ + 1) % num_phases_;
 }
