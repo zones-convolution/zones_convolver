@@ -12,7 +12,7 @@ public:
                         std::size_t num_points_per_block);
 
     ComplexBuffer & GetNextBlock ();
-    [[nodiscard]] const ComplexBuffer & GetBlockWithOffset (std::size_t offset) const;
+    [[nodiscard]] ComplexBuffer & GetBlockWithOffset (std::size_t offset);
 
 private:
     std::vector<ComplexBuffer> delay_line_;

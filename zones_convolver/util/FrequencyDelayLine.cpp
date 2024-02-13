@@ -25,7 +25,7 @@ ComplexBuffer & FrequencyDelayLine::GetNextBlock ()
     return delay_line_ [head_position_];
 }
 
-const ComplexBuffer & FrequencyDelayLine::GetBlockWithOffset (std::size_t offset) const
+ComplexBuffer & FrequencyDelayLine::GetBlockWithOffset (std::size_t offset)
 {
     return delay_line_ [(head_position_ + offset) % num_blocks_];
 }

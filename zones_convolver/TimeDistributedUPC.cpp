@@ -11,65 +11,81 @@ void TimeDistributedUPC::Prepare (const juce::dsp::ProcessSpec & spec,
 
     auto num_blocks_in_partition = partition_size_samples_ / spec_.maximumBlockSize;
 
+    num_decompositions_ = static_cast<int> (std::log2 (num_blocks_in_partition / 2));
     num_phases_ = num_blocks_in_partition;
     phase_ = 0;
-
-    auto maximal_decompositions = std::log2 (num_phases_) - 1;
-    forward_decomposition_plan_ = DecompositionSchedule::CreateForwardDecompositionPlan (
-        num_blocks_in_partition, num_phases_, maximal_decompositions);
-
-    inverse_decomposition_plan_ = DecompositionSchedule::CreateInverseDecompositionPlan (
-        num_blocks_in_partition, num_phases_, maximal_decompositions);
 
     fft_num_points_ = 2 * partition_size_samples_;
     stage_buffers_ = std::make_unique<StageBuffers> (fft_num_points_);
 
     PrepareFilterPartitions (ir_segment, partition_size_samples, spec);
-
-    // fft schedule prepare
 }
 
 void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float> & replacing)
 {
     if (phase_ == 0)
+    {
         stage_buffers_->PromoteStages ();
+        auto & first_fdl_block = frequency_delay_line_->GetNextBlock ();
+        first_fdl_block.Clear ();
+    }
 
     auto output_block = replacing.getOutputBlock ();
     auto block_size = output_block.getNumSamples ();
 
-    /**
-     * FILL STAGE BUFFERS -> Move to function??
-     */
-    {
-        auto stage_a =
-            stage_buffers_->GetStage (StageBuffers::StageBuffer::kA)->GetWritePointer (0);
-        for (auto sample_index = 0; sample_index < block_size; ++sample_index)
-            stage_a [(phase_ * block_size) + sample_index] =
-                std::complex<float> {output_block.getSample (0, sample_index), 0.f};
-    }
-
-    DecompositionSchedule::ExecuteForwardDecompositionPlan (
-        forward_decomposition_plan_, *stage_buffers_, fft_num_points_, num_phases_, phase_);
+    // Fill input buffer
+    auto stage_a = stage_buffers_->GetStage (StageBuffers::StageBuffer::kA)->GetWritePointer (0);
+    for (auto sample_index = 0; sample_index < block_size; ++sample_index)
+        stage_a [(phase_ * block_size) + sample_index] =
+            std::complex<float> {output_block.getSample (0, sample_index), 0.f};
 
     // Forward FFT
+    DecompositionSchedule::ForwardDecompositionSchedule (
+        num_decompositions_, fft_num_points_, num_phases_, stage_a, phase_);
 
     // Convolve
+    auto stage_b = stage_buffers_->GetStage (StageBuffers::StageBuffer::kB)->GetWritePointer (0);
+    auto sub_fft_size = fft_num_points_ / (static_cast<int> (std::pow (2, num_decompositions_)));
+    auto half_sub_fft_size = sub_fft_size / 2;
+    auto offset = (phase_ * half_sub_fft_size);
+
+    if (phase_ % 2 == 0)
+    {
+        auto sub_fft_data = &stage_b [offset];
+        ForwardFFTUnordered (sub_fft_data, sub_fft_size);
+
+        auto first_fdl = frequency_delay_line_->GetBlockWithOffset (0).GetWritePointer (0);
+        for (auto point_index = 0; point_index < sub_fft_size; ++point_index)
+            first_fdl [offset + point_index] = sub_fft_data [point_index];
+    }
+
+    for (auto fdl_index = 0; fdl_index < num_partitions_; ++fdl_index)
+    {
+        auto fdl_block = frequency_delay_line_->GetBlockWithOffset (fdl_index).GetWritePointer (0);
+        auto filter = filter_partitions_ [fdl_index].GetWritePointer (0);
+
+        for (auto point_index = 0; point_index < half_sub_fft_size; ++point_index)
+        {
+            auto absolute_point = offset + point_index;
+            stage_b [absolute_point] += fdl_block [absolute_point] * filter [absolute_point];
+        }
+    }
+
+    if (phase_ % 2 != 0)
+    {
+        auto sub_fft_data = &stage_b [((phase_ - 1) / 2) * sub_fft_size];
+        InverseFFTUnordered (sub_fft_data, sub_fft_size);
+    }
 
     // Inverse FFT
-    
-    DecompositionSchedule::ExecuteInverseDecompositionPlan (
-        forward_decomposition_plan_, *stage_buffers_, fft_num_points_, num_phases_, phase_);
+    auto stage_c = stage_buffers_->GetStage (StageBuffers::StageBuffer::kC)->GetWritePointer (0);
+    DecompositionSchedule::InverseDecompositionSchedule (
+        num_decompositions_, fft_num_points_, num_phases_, stage_c, phase_);
 
-    /**
-     * FILL OUTPUT BUFFER -> Move to function??
-     */
-    {
-        auto stage_c =
-            stage_buffers_->GetStage (StageBuffers::StageBuffer::kC)->GetWritePointer (0);
-        for (auto sample_index = 0; sample_index < block_size; ++sample_index)
-            output_block.setSample (
-                0, sample_index, stage_c [(phase_ * block_size) + sample_index].real ());
-    }
+    // Fill output buffer
+    for (auto sample_index = 0; sample_index < block_size; ++sample_index)
+        output_block.setSample (
+            0, sample_index, stage_c [(phase_ * block_size) + sample_index].real ());
 
     phase_ = (phase_ + 1) % num_phases_;
 }
@@ -79,13 +95,13 @@ void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<float> i
                                                   const juce::dsp::ProcessSpec & spec)
 {
     auto filter_size = ir_segment.getNumSamples ();
-    auto num_partitions = static_cast<int> (
+    num_partitions_ = static_cast<int> (
         std::ceil (static_cast<float> (filter_size) / static_cast<float> (partition_size_samples)));
 
     frequency_delay_line_ =
-        std::make_unique<FrequencyDelayLine> (1, num_partitions, fft_num_points_);
+        std::make_unique<FrequencyDelayLine> (1, num_partitions_, fft_num_points_);
 
-    for (auto partition_index = 0; partition_index < num_partitions; ++partition_index)
+    for (auto partition_index = 0; partition_index < num_partitions_; ++partition_index)
     {
         auto filter_partition_block = ir_segment.getSubBlock (
             partition_index * partition_size_samples, partition_size_samples);

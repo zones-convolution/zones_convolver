@@ -1,6 +1,5 @@
 #pragma once
 #include "ComplexBuffer.h"
-#include "FFTDecomposition.h"
 
 class StageBuffers
 {
@@ -24,46 +23,14 @@ private:
 
 namespace DecompositionSchedule
 {
-
-struct DecompositionTask
-{
-    bool empty = false;
-    int stage_index;
-    int segment_index;
-    int num_points;
-    int num_steps;
-    int current_step;
-};
-
-using DecompositionFunction = void (*) (std::complex<float> * data,
-                                        std::size_t num_points,
-                                        std::size_t num_steps,
-                                        std::size_t current_step);
-
-using DecompositionPlan = std::vector<DecompositionTask>;
-
-DecompositionPlan
-CreateForwardDecompositionPlan (int partition_size, int num_phases, int num_decompositions);
-
-DecompositionPlan
-CreateInverseDecompositionPlan (int partition_size, int num_phases, int num_decompositions);
-
-void ExecuteDecompositionTask (DecompositionSchedule::DecompositionFunction decomposition_function,
-                               const DecompositionSchedule::DecompositionTask & decomposition_task,
-                               StageBuffers & stage_buffers);
-
-/**
- * NEEDS LOTS OF TESTING!!! haha... rip...
- */
-void ExecuteForwardDecompositionPlan (const DecompositionPlan & plan,
-                                      StageBuffers & stage_buffers,
-                                      int num_points,
-                                      int num_phases,
-                                      int phase_number);
-
-void ExecuteInverseDecompositionPlan (const DecompositionPlan & plan,
-                                      StageBuffers & stage_buffers,
-                                      int num_points,
-                                      int num_phases,
-                                      int phase_number);
+void ForwardDecompositionSchedule (int num_decompositions,
+                                   int fft_size,
+                                   int num_blocks,
+                                   std::complex<float> * data,
+                                   int phase);
+void InverseDecompositionSchedule (int num_decompositions,
+                                   int fft_size,
+                                   int num_blocks,
+                                   std::complex<float> * data,
+                                   int phase);
 }

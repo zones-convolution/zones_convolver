@@ -25,12 +25,10 @@ private:
 
     int num_phases_;
     int phase_;
+    int num_decompositions_;
+    int num_partitions_;
 
     std::vector<ComplexBuffer> filter_partitions_;
     std::unique_ptr<FrequencyDelayLine> frequency_delay_line_;
-
-    DecompositionSchedule::DecompositionPlan forward_decomposition_plan_;
-    DecompositionSchedule::DecompositionPlan inverse_decomposition_plan_;
-
     std::unique_ptr<StageBuffers> stage_buffers_;
 };
