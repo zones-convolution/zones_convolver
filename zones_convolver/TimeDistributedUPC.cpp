@@ -26,6 +26,8 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
     if (phase_ == 0)
     {
         stage_buffers_->PromoteStages ();
+        auto stage_a = stage_buffers_->GetStage (StageBuffers::StageBuffer::kA);
+        stage_a->Clear ();
         auto & first_fdl_block = frequency_delay_line_->GetNextBlock ();
         first_fdl_block.Clear ();
     }
