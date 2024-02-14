@@ -53,11 +53,11 @@ void FFTDecomposition::InverseDecompositionRadix2 (std::complex<float> * data,
     }
 }
 
-void SegmentedForwardDecompositionRadix2 (std::complex<float> * data,
-                                          std::size_t num_points,
-                                          std::size_t num_segments,
-                                          std::size_t num_steps,
-                                          std::size_t current_step)
+void FFTDecomposition::SegmentedForwardDecompositionRadix2 (std::complex<float> * data,
+                                                            std::size_t num_points,
+                                                            std::size_t num_segments,
+                                                            std::size_t num_steps,
+                                                            std::size_t current_step)
 {
     jassert (num_segments > 0 && juce::isPowerOfTwo (num_segments));
     jassert (num_points > 0 && juce::isPowerOfTwo (num_points));
@@ -87,11 +87,11 @@ void SegmentedForwardDecompositionRadix2 (std::complex<float> * data,
     }
 }
 
-void SegmentedInverseDecompositionRadix2 (std::complex<float> * data,
-                                          std::size_t num_points,
-                                          std::size_t num_segments,
-                                          std::size_t num_steps,
-                                          std::size_t current_step)
+void FFTDecomposition::SegmentedInverseDecompositionRadix2 (std::complex<float> * data,
+                                                            std::size_t num_points,
+                                                            std::size_t num_segments,
+                                                            std::size_t num_steps,
+                                                            std::size_t current_step)
 {
     jassert (num_segments > 0 && juce::isPowerOfTwo (num_segments));
     jassert (num_points > 0 && juce::isPowerOfTwo (num_points));
