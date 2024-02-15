@@ -3,10 +3,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
 #include <zones_convolver/util/ComplexBuffer.h>
+#include <zones_convolver/util/FFT.h>
 #include <zones_convolver/util/FFTDecomposition.h>
 
-TEST_CASE ("changing step size does not affect forward decomposition output",
-           "[ForwardDecompositionRadix2]")
+TEST_CASE ("changing step size does not affect segmented forward decomposition output",
+           "[SegmentedForwardDecompositionRadix2]")
 {
     for (auto num_points : {8u, 16u, 32u, 64u, 128u})
     {
@@ -27,8 +28,8 @@ TEST_CASE ("changing step size does not affect forward decomposition output",
             auto step_size = static_cast<std::size_t> (std::pow (2, step_size_index));
             auto num_steps = num_points / (2 * step_size);
             for (auto step = 0u; step < num_steps; ++step)
-                FFTDecomposition::ForwardDecompositionRadix2 (
-                    inputs.GetWritePointer (step_size_index), num_points, num_steps, step);
+                FFTDecomposition::SegmentedForwardDecompositionRadix2 (
+                    inputs.GetWritePointer (step_size_index), num_points, 1, num_steps, step);
         }
 
         for (auto step_size_index = 0u; step_size_index < num_step_sizes - 1; ++step_size_index)
@@ -39,12 +40,10 @@ TEST_CASE ("changing step size does not affect forward decomposition output",
     }
 }
 
-TEST_CASE ("completes forward decomposed FFT", "[ForwardDecompositionRadix2]")
+TEST_CASE ("completes segmented decomposed FFT", "[SegmentedForwardDecompositionRadix2]")
 {
     for (auto num_points : {2u, 4u, 8u, 32u, 64u, 1024u})
     {
-        static constexpr auto kDecomposedFFTIndex = 0;
-
         ComplexBuffer input {num_points, 2};
         input.Clear ();
 
@@ -64,16 +63,8 @@ TEST_CASE ("completes forward decomposed FFT", "[ForwardDecompositionRadix2]")
         {
             auto num_sub_decompositions =
                 static_cast<std::size_t> (std::pow (2, decomposition_layer));
-            auto sub_decomposition_num_points = num_points / num_sub_decompositions;
-            for (auto sub_decomposition = 0u; sub_decomposition < num_sub_decompositions;
-                 ++sub_decomposition)
-            {
-                FFTDecomposition::ForwardDecompositionRadix2 (
-                    &decomposed_fft_channel [sub_decomposition * sub_decomposition_num_points],
-                    sub_decomposition_num_points,
-                    1,
-                    0);
-            }
+            FFTDecomposition::SegmentedForwardDecompositionRadix2 (
+                decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
         }
 
         /**
@@ -88,8 +79,57 @@ TEST_CASE ("completes forward decomposed FFT", "[ForwardDecompositionRadix2]")
     }
 }
 
-TEST_CASE ("changing step size does not affect inverse decomposition output",
-           "[InverseDecompositionRadix2]")
+TEST_CASE ("segmented decomposed FFT followed by unordered FFT",
+           "[SegmentedForwardDecompositionRadix2]")
+{
+    for (auto num_points : {32u, 64u, 1024u})
+    {
+        ComplexBuffer input {num_points, 2};
+        input.Clear ();
+
+        auto decomposed_fft_channel = input.GetWritePointer (0);
+        auto juce_fft_channel = input.GetWritePointer (1);
+
+        for (auto point_index = 0u; point_index < num_points; ++point_index)
+            decomposed_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+
+        auto fft_order = static_cast<int> (std::log2 (num_points));
+        auto juce_fft = juce::dsp::FFT {fft_order};
+        juce_fft.perform (decomposed_fft_channel, juce_fft_channel, false);
+
+        auto num_decomposition_layers = 3;
+        for (auto decomposition_layer = 0u; decomposition_layer < num_decomposition_layers;
+             ++decomposition_layer)
+        {
+            auto num_sub_decompositions =
+                static_cast<std::size_t> (std::pow (2, decomposition_layer));
+            FFTDecomposition::SegmentedForwardDecompositionRadix2 (
+                decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
+        }
+
+        auto num_sub_decompositions =
+            static_cast<std::size_t> (std::pow (2, num_decomposition_layers));
+        auto sub_fft_size = num_points / num_sub_decompositions;
+
+        for (auto sub_decomposition_index = 0; sub_decomposition_index < num_sub_decompositions;
+             ++sub_decomposition_index)
+            ForwardFFTUnordered (&decomposed_fft_channel [sub_decomposition_index * sub_fft_size],
+                                 sub_fft_size);
+
+        /**
+         * JUCE FFT performs DIT, to ensure points within each output have the same order a bit
+         * reverse swap is performed on the DIF FFT outputs.
+         */
+        BitReverseSwap (decomposed_fft_channel, num_points);
+
+        for (auto point_index = 0u; point_index < num_points; ++point_index)
+            REQUIRE (ApproximatelyEqualComplex (decomposed_fft_channel [point_index],
+                                                juce_fft_channel [point_index]));
+    }
+}
+
+TEST_CASE ("changing step size does not affect segmented inverse decomposition output",
+           "[SegmentedInverseDecompositionRadix2]")
 {
     for (auto num_points : {8u, 16u, 32u, 64u, 128u})
     {
@@ -110,8 +150,8 @@ TEST_CASE ("changing step size does not affect inverse decomposition output",
             auto step_size = static_cast<std::size_t> (std::pow (2, step_size_index));
             auto num_steps = num_points / (2 * step_size);
             for (auto step = 0u; step < num_steps; ++step)
-                FFTDecomposition::InverseDecompositionRadix2 (
-                    inputs.GetWritePointer (step_size_index), num_points, num_steps, step);
+                FFTDecomposition::SegmentedInverseDecompositionRadix2 (
+                    inputs.GetWritePointer (step_size_index), num_points, 1, num_steps, step);
         }
 
         for (auto step_size_index = 0u; step_size_index < num_step_sizes - 1; ++step_size_index)
@@ -122,12 +162,10 @@ TEST_CASE ("changing step size does not affect inverse decomposition output",
     }
 }
 
-TEST_CASE ("completes inverse decomposed FFT", "[InverseDecompositionRadix2]")
+TEST_CASE ("completes segmented inverse decomposed FFT", "[SegmentedInverseDecompositionRadix2]")
 {
     for (auto num_points : {8u, 16u, 32u, 64u, 128u})
     {
-        static constexpr auto kDecomposedFFTIndex = 0;
-
         ComplexBuffer input {num_points, 2};
         input.Clear ();
 
@@ -153,16 +191,58 @@ TEST_CASE ("completes inverse decomposed FFT", "[InverseDecompositionRadix2]")
         {
             auto num_sub_decompositions =
                 static_cast<std::size_t> (std::pow (2, decomposition_layer - 1));
-            auto sub_decomposition_num_points = num_points / num_sub_decompositions;
-            for (auto sub_decomposition = 0u; sub_decomposition < num_sub_decompositions;
-                 ++sub_decomposition)
-            {
-                FFTDecomposition::InverseDecompositionRadix2 (
-                    &decomposed_fft_channel [sub_decomposition * sub_decomposition_num_points],
-                    sub_decomposition_num_points,
-                    1,
-                    0);
-            }
+            FFTDecomposition::SegmentedInverseDecompositionRadix2 (
+                decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
+        }
+
+        for (auto point_index = 0u; point_index < num_points; ++point_index)
+            REQUIRE (ApproximatelyEqualComplex (decomposed_fft_channel [point_index],
+                                                juce_fft_channel [point_index]));
+    }
+}
+
+TEST_CASE ("completes segmented inverse followed by unordered iFFT",
+           "[SegmentedInverseDecompositionRadix2]")
+{
+    for (auto num_points : {32u, 64u, 128u})
+    {
+        ComplexBuffer input {num_points, 2};
+        input.Clear ();
+
+        auto decomposed_fft_channel = input.GetWritePointer (0);
+        auto juce_fft_channel = input.GetWritePointer (1);
+
+        for (auto point_index = 0u; point_index < num_points; ++point_index)
+            decomposed_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+
+        auto fft_order = static_cast<int> (std::log2 (num_points));
+        auto juce_fft = juce::dsp::FFT {fft_order};
+        juce_fft.perform (decomposed_fft_channel, juce_fft_channel, true);
+
+        /**
+         * BIT Reverse must be performed here to arrange the correctly ordered FFT points for the
+         * inverse DIF decomposition.
+         */
+        BitReverseSwap (decomposed_fft_channel, num_points);
+
+        auto num_decomposition_layers = 3;
+
+        auto num_sub_decompositions =
+            static_cast<std::size_t> (std::pow (2, num_decomposition_layers));
+        auto sub_fft_size = num_points / num_sub_decompositions;
+
+        for (auto sub_decomposition_index = 0; sub_decomposition_index < num_sub_decompositions;
+             ++sub_decomposition_index)
+            InverseFFTUnordered (&decomposed_fft_channel [sub_decomposition_index * sub_fft_size],
+                                 sub_fft_size);
+
+        for (auto decomposition_layer = num_decomposition_layers; decomposition_layer > 0u;
+             --decomposition_layer)
+        {
+            auto num_sub_decompositions =
+                static_cast<std::size_t> (std::pow (2, decomposition_layer - 1));
+            FFTDecomposition::SegmentedInverseDecompositionRadix2 (
+                decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
         }
 
         for (auto point_index = 0u; point_index < num_points; ++point_index)

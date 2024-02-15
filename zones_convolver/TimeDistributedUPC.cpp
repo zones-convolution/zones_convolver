@@ -41,11 +41,15 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
         stage_a [(phase_ * block_size) + sample_index] =
             std::complex<float> {output_block.getSample (0, sample_index), 0.f};
 
-    // Forward FFT
+    // Block Size 1024
+    // 8192 Partition Size
+    // 16384 FFT Size
+
+    // Num Phases: 8
+
     DecompositionSchedule::ForwardDecompositionSchedule (
         num_decompositions_, fft_num_points_, num_phases_, stage_a, phase_);
 
-    // Convolve
     auto stage_b = stage_buffers_->GetStage (StageBuffers::StageBuffer::kB)->GetWritePointer (0);
     auto sub_fft_size = fft_num_points_ / (static_cast<int> (std::pow (2, num_decompositions_)));
     auto half_sub_fft_size = sub_fft_size / 2;
@@ -82,7 +86,6 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
         InverseFFTUnordered (sub_fft_data, sub_fft_size);
     }
 
-    // Inverse FFT
     auto stage_c = stage_buffers_->GetStage (StageBuffers::StageBuffer::kC)->GetWritePointer (0);
     DecompositionSchedule::InverseDecompositionSchedule (
         num_decompositions_, fft_num_points_, num_phases_, stage_c, phase_);
