@@ -49,7 +49,7 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
     auto stage_b = stage_buffers_->GetStage (StageBuffers::StageBuffer::kB)->GetWritePointer (0);
     auto sub_fft_size = fft_num_points_ / (static_cast<int> (std::pow (2, num_decompositions_)));
     auto half_sub_fft_size = sub_fft_size / 2;
-    auto offset = (phase_ * half_sub_fft_size);
+    auto offset = phase_ * half_sub_fft_size;
 
     if (phase_ % 2 == 0)
     {
@@ -58,13 +58,16 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
 
         auto first_fdl = frequency_delay_line_->GetBlockWithOffset (0).GetWritePointer (0);
         for (auto point_index = 0; point_index < sub_fft_size; ++point_index)
+        {
             first_fdl [offset + point_index] = sub_fft_data [point_index];
+            sub_fft_data [point_index] = {0.f, 0.f};
+        }
     }
 
     for (auto fdl_index = 0; fdl_index < num_partitions_; ++fdl_index)
     {
-        auto fdl_block = frequency_delay_line_->GetBlockWithOffset (fdl_index).GetWritePointer (0);
-        auto filter = filter_partitions_ [fdl_index].GetWritePointer (0);
+        auto fdl_block = frequency_delay_line_->GetBlockWithOffset (fdl_index).GetReadPointer (0);
+        auto filter = filter_partitions_ [fdl_index].GetReadPointer (0);
 
         for (auto point_index = 0; point_index < half_sub_fft_size; ++point_index)
         {
@@ -105,8 +108,9 @@ void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<float> i
 
     for (auto partition_index = 0; partition_index < num_partitions_; ++partition_index)
     {
+        auto offset = partition_index * partition_size_samples;
         auto filter_partition_block = ir_segment.getSubBlock (
-            partition_index * partition_size_samples, partition_size_samples);
+            offset, std::min (partition_size_samples, static_cast<int> (filter_size - offset)));
         auto filter_partition = ComplexBuffer (fft_num_points_, 1);
         filter_partition.Clear ();
         filter_partition.CopyFromAudioBlock (filter_partition_block);
