@@ -41,12 +41,6 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
         stage_a [(phase_ * block_size) + sample_index] =
             std::complex<float> {output_block.getSample (0, sample_index), 0.f};
 
-    // Block Size 1024
-    // 8192 Partition Size
-    // 16384 FFT Size
-
-    // Num Phases: 8
-
     DecompositionSchedule::ForwardDecompositionSchedule (
         num_decompositions_, fft_num_points_, num_phases_, stage_a, phase_);
 
@@ -90,10 +84,17 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
     DecompositionSchedule::InverseDecompositionSchedule (
         num_decompositions_, fft_num_points_, num_phases_, stage_c, phase_);
 
+    auto stage_position = phase_ * block_size;
+    auto previous_tail = previous_tail_.getWritePointer (0);
+
     // Fill output buffer
     for (auto sample_index = 0; sample_index < block_size; ++sample_index)
+    {
+        auto stage_offset = static_cast<int> (stage_position + sample_index);
         output_block.setSample (
-            0, sample_index, stage_c [(phase_ * block_size) + sample_index].real ());
+            0, sample_index, stage_c [stage_offset].real () + previous_tail [stage_offset]);
+        previous_tail [stage_offset] = stage_c [stage_offset + partition_size_samples_].real ();
+    }
 
     phase_ = (phase_ + 1) % num_phases_;
 }
@@ -102,6 +103,8 @@ void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<float> i
                                                   int partition_size_samples,
                                                   const juce::dsp::ProcessSpec & spec)
 {
+    filter_partitions_.clear ();
+
     auto filter_size = ir_segment.getNumSamples ();
     num_partitions_ = static_cast<int> (
         std::ceil (static_cast<float> (filter_size) / static_cast<float> (partition_size_samples)));
@@ -120,4 +123,7 @@ void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<float> i
         ForwardFFTUnordered (filter_partition.GetWritePointer (0), fft_num_points_);
         filter_partitions_.emplace_back (std::move (filter_partition));
     }
+
+    previous_tail_.setSize (1, partition_size_samples);
+    previous_tail_.clear ();
 }

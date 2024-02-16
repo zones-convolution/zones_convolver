@@ -31,4 +31,5 @@ private:
     std::vector<ComplexBuffer> filter_partitions_;
     std::unique_ptr<FrequencyDelayLine> frequency_delay_line_;
     std::unique_ptr<StageBuffers> stage_buffers_;
+    juce::AudioBuffer<float> previous_tail_;
 };
