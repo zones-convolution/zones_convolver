@@ -12,6 +12,7 @@ void NonUniformPartitionedConvolver::process (
     const juce::dsp::ProcessContextReplacing<float> & replacing)
 {
     auto output_block = replacing.getOutputBlock ();
+
     juce::dsp::AudioBlock<float> held_input_block {held_input_buffer_};
     held_input_block.copyFrom (output_block);
 
@@ -31,7 +32,6 @@ void NonUniformPartitionedConvolver::process (
 
     output_block.copyFrom (held_input_block);
     uniform_partitioned_convolver_.process (replacing);
-
     next_block.AddTo (output_block);
 }
 
@@ -103,4 +103,6 @@ void NonUniformPartitionedConvolver::LoadImpulseResponse (juce::dsp::AudioBlock<
     {
         convolution_result_.setSize (process_spec_.numChannels, block_size);
     }
+
+    convolution_result_.clear ();
 }
