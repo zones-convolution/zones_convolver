@@ -12,6 +12,7 @@ public:
     void AddFrom (juce::dsp::AudioBlock<const float> block);
 
     void CopyTo (juce::dsp::AudioBlock<float> block);
+    void AddTo (juce::dsp::AudioBlock<float> block);
     void Clear ();
 
     SplitBlock GetSubBlock (std::size_t num_samples);

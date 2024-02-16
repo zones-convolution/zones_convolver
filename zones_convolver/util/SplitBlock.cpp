@@ -42,6 +42,15 @@ void SplitBlock::CopyTo (juce::dsp::AudioBlock<float> block)
         block.getSubBlock (first_num_samples).copyFrom (wrapped_block_);
 }
 
+void SplitBlock::AddTo (juce::dsp::AudioBlock<float> block)
+{
+    block.add (first_block_);
+
+    auto first_num_samples = first_block_.getNumSamples ();
+    if (block.getNumSamples () > first_num_samples && wrapped_block_.getNumSamples () > 0)
+        block.getSubBlock (first_num_samples).add (wrapped_block_);
+}
+
 void SplitBlock::Clear ()
 {
     first_block_.clear ();
