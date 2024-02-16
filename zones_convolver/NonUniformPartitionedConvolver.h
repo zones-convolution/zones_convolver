@@ -18,6 +18,8 @@ private:
     juce::dsp::ProcessSpec process_spec_;
     UniformPartitionedConvolver uniform_partitioned_convolver_;
 
+    int circular_buffer_size_;
+
     juce::AudioBuffer<float> held_input_buffer_;
 
     juce::AudioBuffer<float> convolution_result_;

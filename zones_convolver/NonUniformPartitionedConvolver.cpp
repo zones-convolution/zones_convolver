@@ -12,17 +12,20 @@ void NonUniformPartitionedConvolver::process (
     const juce::dsp::ProcessContextReplacing<float> & replacing)
 {
     auto output_block = replacing.getOutputBlock ();
+    auto block_size = process_spec_.maximumBlockSize;
 
     juce::dsp::AudioBlock<float> held_input_block {held_input_buffer_};
     held_input_block.copyFrom (output_block);
 
+    auto next_block = circular_buffer_.GetNext (block_size, true).GetSubBlock (block_size);
+
     if (secondary_in_use_)
     {
+        auto delayed_block = circular_buffer_.GetNext (circular_buffer_size_, false);
         secondary_tdupc_.Process (replacing);
-        circular_buffer_.GetNext (0).CopyFrom (output_block);
+        delayed_block.AddFrom (output_block);
     }
 
-    auto next_block = circular_buffer_.GetNext (process_spec_.maximumBlockSize);
     if (primary_in_use_)
     {
         output_block.copyFrom (held_input_block);
@@ -32,7 +35,9 @@ void NonUniformPartitionedConvolver::process (
 
     output_block.copyFrom (held_input_block);
     uniform_partitioned_convolver_.process (replacing);
+
     next_block.AddTo (output_block);
+    next_block.Clear ();
 }
 
 void NonUniformPartitionedConvolver::reset ()
@@ -74,7 +79,9 @@ void NonUniformPartitionedConvolver::LoadImpulseResponse (juce::dsp::AudioBlock<
             std::min (static_cast<int> (remaining_samples_to_convolve),
                       static_cast<int> (kMaxNumBlocksInPrimaryTDUPC * kPrimaryTDUPCPartitionSize));
 
-        auto primary_TDUPC_block = ir_block.getSubBlock (offset, num_samples_primary_TDUPC);
+        auto primary_TDUPC_block =
+            ir_block.getSubBlock (offset, num_samples_primary_TDUPC).getSingleChannelBlock (0);
+
         primary_tdupc_.Prepare (process_spec_, kPrimaryTDUPCPartitionSize, primary_TDUPC_block);
         remaining_samples_to_convolve -= num_samples_primary_TDUPC;
 
@@ -87,7 +94,8 @@ void NonUniformPartitionedConvolver::LoadImpulseResponse (juce::dsp::AudioBlock<
 
     if (remaining_samples_to_convolve > 0)
     {
-        auto secondary_TDUPC_block = ir_block.getSubBlock (offset, remaining_samples_to_convolve);
+        auto secondary_TDUPC_block =
+            ir_block.getSubBlock (offset, remaining_samples_to_convolve).getSingleChannelBlock (0);
         secondary_tdupc_.Prepare (
             process_spec_, kSecondaryTDUPCPartitionSize, secondary_TDUPC_block);
 
@@ -97,11 +105,13 @@ void NonUniformPartitionedConvolver::LoadImpulseResponse (juce::dsp::AudioBlock<
     if (secondary_in_use_)
     {
         auto circular_buffer_size = offset - (2 * kSecondaryTDUPCPartitionSize);
+        circular_buffer_size_ = circular_buffer_size;
         convolution_result_.setSize (process_spec_.numChannels, circular_buffer_size + block_size);
     }
     else
     {
         convolution_result_.setSize (process_spec_.numChannels, block_size);
+        circular_buffer_size_ = 0;
     }
 
     convolution_result_.clear ();

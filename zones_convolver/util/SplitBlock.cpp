@@ -53,8 +53,11 @@ void SplitBlock::AddTo (juce::dsp::AudioBlock<float> block)
 
 void SplitBlock::Clear ()
 {
-    first_block_.clear ();
-    wrapped_block_.clear ();
+    if (first_block_.getNumSamples () > 0)
+        first_block_.clear ();
+
+    if (wrapped_block_.getNumSamples () > 0)
+        wrapped_block_.clear ();
 }
 
 SplitBlock SplitBlock::GetSubBlock (std::size_t num_samples)
@@ -64,6 +67,8 @@ SplitBlock SplitBlock::GetSubBlock (std::size_t num_samples)
     auto first_samples_to_take = std::min (num_samples, first_block_.getNumSamples ());
     auto wrapped_samples_to_take = num_samples - first_samples_to_take;
 
-    return {first_block_.getSubBlock (0, first_samples_to_take),
-            wrapped_block_.getSubBlock (0, wrapped_samples_to_take)};
+    return {first_samples_to_take > 0 ? first_block_.getSubBlock (0, first_samples_to_take)
+                                      : juce::dsp::AudioBlock<float> (),
+            wrapped_samples_to_take > 0 ? wrapped_block_.getSubBlock (0, wrapped_samples_to_take)
+                                        : juce::dsp::AudioBlock<float> ()};
 }
