@@ -17,7 +17,6 @@ void NonUniformPartitionedConvolver::process (
 
     if (secondary_in_use_)
     {
-        output_block.copyFrom (held_input_block);
         secondary_tdupc_.Process (replacing);
         circular_buffer_.GetNext (0).CopyFrom (output_block);
     }
@@ -25,6 +24,7 @@ void NonUniformPartitionedConvolver::process (
     auto next_block = circular_buffer_.GetNext (process_spec_.maximumBlockSize);
     if (primary_in_use_)
     {
+        output_block.copyFrom (held_input_block);
         primary_tdupc_.Process (replacing);
         next_block.AddFrom (output_block);
     }
