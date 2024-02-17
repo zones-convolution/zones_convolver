@@ -56,6 +56,7 @@ void UniformPartitionedConvolver::LoadImpulseResponse (juce::dsp::AudioBlock<flo
                                                        double sample_rate)
 {
     auto num_channels = process_spec_.numChannels;
+    auto ir_num_channels = ir_block.getNumChannels ();
     auto block_size = process_spec_.maximumBlockSize;
 
     fft_size_ = block_size * 2;
@@ -83,8 +84,17 @@ void UniformPartitionedConvolver::LoadImpulseResponse (juce::dsp::AudioBlock<flo
             std::min (block_size, static_cast<uint> (num_samples) - partition_offset);
         auto partition_block = ir_block.getSubBlock (partition_offset, partition_length);
 
+        juce::AudioBuffer<float> copy_partition_buffer {static_cast<int> (num_channels),
+                                                        static_cast<int> (partition_length)};
+        for (auto channel_index = 0; channel_index < num_channels; ++channel_index)
+        {
+            juce::dsp::AudioBlock<float> (copy_partition_buffer)
+                .getSingleChannelBlock (channel_index)
+                .copyFrom (partition_block.getSingleChannelBlock (channel_index % ir_num_channels));
+        }
+
         input_partition.Clear ();
-        input_partition.CopyFromAudioBlock (partition_block);
+        input_partition.CopyFromAudioBlock (copy_partition_buffer);
 
         ComplexBuffer filter_partition {fft_size_, num_channels};
         filter_partition.Clear ();
