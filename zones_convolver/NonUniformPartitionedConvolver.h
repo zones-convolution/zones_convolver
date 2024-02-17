@@ -21,13 +21,14 @@ private:
     int circular_buffer_size_;
 
     juce::AudioBuffer<float> held_input_buffer_;
+    juce::AudioBuffer<float> cb_hold_buffer_;
 
     juce::AudioBuffer<float> convolution_result_;
     CircularBuffer circular_buffer_ {convolution_result_};
 
     bool primary_in_use_ = false;
-    TimeDistributedUPC primary_tdupc_;
+    std::vector<TimeDistributedUPC> primary_tdupc_;
 
     bool secondary_in_use_ = false;
-    TimeDistributedUPC secondary_tdupc_;
+    std::vector<TimeDistributedUPC> secondary_tdupc_;
 };
