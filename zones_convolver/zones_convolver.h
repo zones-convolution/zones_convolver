@@ -15,6 +15,7 @@ END_JUCE_MODULE_DECLARATION
 */
 
 #include "NonUniformPartitionedConvolver.h"
+#include "TimeDistributedNUPC.h"
 #include "TimeDistributedUPC.h"
 #include "UniformPartitionedConvolver.h"
 #include "util/CircularBuffer.h"

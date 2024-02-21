@@ -1,6 +1,7 @@
 #include "zones_convolver.h"
 
 #include "NonUniformPartitionedConvolver.cpp"
+#include "TimeDistributedNUPC.cpp"
 #include "TimeDistributedUPC.cpp"
 #include "UniformPartitionedConvolver.cpp"
 #include "util/CircularBuffer.cpp"
