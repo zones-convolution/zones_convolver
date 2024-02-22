@@ -3,6 +3,7 @@
 #include "NonUniformPartitionedConvolver.cpp"
 #include "TimeDistributedNUPC.cpp"
 #include "TimeDistributedUPC.cpp"
+#include "TimeDistributedUPCMulti.cpp"
 #include "UniformPartitionedConvolver.cpp"
 #include "util/CircularBuffer.cpp"
 #include "util/ComplexBuffer.cpp"

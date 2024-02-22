@@ -4,7 +4,7 @@
 
 void TimeDistributedUPC::Prepare (const juce::dsp::ProcessSpec & spec,
                                   int partition_size_samples,
-                                  juce::dsp::AudioBlock<float> ir_segment)
+                                  juce::dsp::AudioBlock<const float> ir_segment)
 {
     spec_ = spec;
     partition_size_samples_ = partition_size_samples;
