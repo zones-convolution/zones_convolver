@@ -29,3 +29,9 @@ ComplexBuffer & FrequencyDelayLine::GetBlockWithOffset (std::size_t offset)
 {
     return delay_line_ [(head_position_ + offset) % num_blocks_];
 }
+
+void FrequencyDelayLine::Clear ()
+{
+    for (auto & buffer : delay_line_)
+        buffer.Clear ();
+}

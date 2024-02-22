@@ -1,11 +1,5 @@
 #include "TimeDistributedNUPC.h"
 
-int GetNumPartitionsRequiredForSubConvolver (int partition_size, int sub_convolver_num_samples)
-{
-    return static_cast<int> (std::ceil (static_cast<float> (sub_convolver_num_samples) /
-                                        static_cast<float> (partition_size)));
-}
-
 std::vector<TimeDistributedNUPC::PartitionLayout>
 TimeDistributedNUPC::GetPartitionScheme (int block_size, int ir_num_samples)
 {
@@ -15,7 +9,7 @@ TimeDistributedNUPC::GetPartitionScheme (int block_size, int ir_num_samples)
     auto max_num_samples_in_upc = kMaxNumPartitionsInUPC * block_size;
     auto num_samples_in_upc = std::min (ir_num_samples, max_num_samples_in_upc);
     auto num_partitions_in_upc =
-        GetNumPartitionsRequiredForSubConvolver (block_size, num_samples_in_upc);
+        GetNumPartitionsRequiredForSegment (block_size, num_samples_in_upc);
     partition_scheme.emplace_back (
         PartitionLayout {.partition_size_blocks = 1, .num_partitions = num_partitions_in_upc});
 
@@ -29,8 +23,8 @@ TimeDistributedNUPC::GetPartitionScheme (int block_size, int ir_num_samples)
         auto num_samples_primary = std::min (
             remaining_samples_to_convolve, kPrimaryPartitionSizeSamples * kMaxNumPartitionsPrimary);
 
-        auto num_partitions_primary = GetNumPartitionsRequiredForSubConvolver (
-            kPrimaryPartitionSizeSamples, num_samples_primary);
+        auto num_partitions_primary =
+            GetNumPartitionsRequiredForSegment (kPrimaryPartitionSizeSamples, num_samples_primary);
 
         partition_scheme.emplace_back (
             PartitionLayout {.partition_size_blocks = kPrimaryPartitionSizeBlocks,
@@ -43,7 +37,7 @@ TimeDistributedNUPC::GetPartitionScheme (int block_size, int ir_num_samples)
     {
         const auto kSecondaryPartitionSizeBlocks = 16;
         const auto kSecondaryPartitionSizeSamples = kSecondaryPartitionSizeBlocks * block_size;
-        auto num_partitions_secondary = GetNumPartitionsRequiredForSubConvolver (
+        auto num_partitions_secondary = GetNumPartitionsRequiredForSegment (
             kSecondaryPartitionSizeSamples, remaining_samples_to_convolve);
         partition_scheme.emplace_back (
             PartitionLayout {.partition_size_blocks = kSecondaryPartitionSizeBlocks,

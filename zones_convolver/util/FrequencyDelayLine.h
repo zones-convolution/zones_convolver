@@ -14,6 +14,8 @@ public:
     ComplexBuffer & GetNextBlock ();
     [[nodiscard]] ComplexBuffer & GetBlockWithOffset (std::size_t offset);
 
+    void Clear ();
+
 private:
     std::vector<ComplexBuffer> delay_line_;
     std::size_t head_position_ = 0;

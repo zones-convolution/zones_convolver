@@ -3,6 +3,7 @@
 #include "util/CircularBuffer.h"
 #include "util/ComplexBuffer.h"
 #include "util/FrequencyDelayLine.h"
+#include "util/Partitioning.h"
 
 #include <juce_dsp/juce_dsp.h>
 
@@ -38,4 +39,14 @@ public:
     void Reset ();
 
 private:
+    int fft_size_;
+    std::unique_ptr<juce::dsp::FFT> fft_;
+    int num_samples_to_discard_ = 0;
+
+    std::unique_ptr<FrequencyDelayLine> frequency_delay_line_;
+    std::unique_ptr<ComplexBuffer> convolved_output_;
+    std::vector<ComplexBuffer> filter_partitions_;
+
+    juce::AudioBuffer<float> saved_inputs_;
+    CircularBuffer circular_buffer_ {saved_inputs_};
 };
