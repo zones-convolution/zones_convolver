@@ -9,17 +9,16 @@
 class TimeDistributedUPC
 {
 public:
-    void Prepare (const juce::dsp::ProcessSpec & spec,
-                  int partition_size_samples,
-                  juce::dsp::AudioBlock<const float> ir_segment);
+    TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
+                        int partition_size_samples,
+                        juce::dsp::AudioBlock<const float> ir_segment);
     void Process (const juce::dsp::ProcessContextReplacing<float> & replacing);
+    void Reset ();
 
 private:
-    void PrepareFilterPartitions (juce::dsp::AudioBlock<float> ir_segment,
-                                  int partition_size_samples,
-                                  const juce::dsp::ProcessSpec & spec);
+    void PrepareFilterPartitions (juce::dsp::AudioBlock<const float> ir_segment,
+                                  int partition_size_samples);
 
-    juce::dsp::ProcessSpec spec_;
     int partition_size_samples_;
     int fft_num_points_;
 

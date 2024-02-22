@@ -14,6 +14,7 @@ public:
     explicit StageBuffers (int num_points);
     [[nodiscard]] ComplexBuffer * GetStage (int stage);
     void PromoteStages ();
+    void Clear ();
 
 private:
     static constexpr auto kNumStages = 3;

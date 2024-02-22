@@ -2,14 +2,13 @@
 
 #include "util/FFT.h"
 
-void TimeDistributedUPC::Prepare (const juce::dsp::ProcessSpec & spec,
-                                  int partition_size_samples,
-                                  juce::dsp::AudioBlock<const float> ir_segment)
+TimeDistributedUPC::TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
+                                        int partition_size_samples,
+                                        juce::dsp::AudioBlock<const float> ir_segment)
 {
-    spec_ = spec;
     partition_size_samples_ = partition_size_samples;
 
-    auto num_blocks_in_partition = partition_size_samples_ / spec_.maximumBlockSize;
+    auto num_blocks_in_partition = partition_size_samples_ / spec.maximumBlockSize;
 
     num_decompositions_ = static_cast<int> (std::log2 (num_blocks_in_partition / 2));
     num_phases_ = num_blocks_in_partition;
@@ -18,7 +17,7 @@ void TimeDistributedUPC::Prepare (const juce::dsp::ProcessSpec & spec,
     fft_num_points_ = 2 * partition_size_samples_;
     stage_buffers_ = std::make_unique<StageBuffers> (fft_num_points_);
 
-    PrepareFilterPartitions (ir_segment, partition_size_samples, spec);
+    PrepareFilterPartitions (ir_segment, partition_size_samples);
 }
 
 void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float> & replacing)
@@ -99,9 +98,8 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
     phase_ = (phase_ + 1) % num_phases_;
 }
 
-void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<float> ir_segment,
-                                                  int partition_size_samples,
-                                                  const juce::dsp::ProcessSpec & spec)
+void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<const float> ir_segment,
+                                                  int partition_size_samples)
 {
     filter_partitions_.clear ();
 
@@ -126,4 +124,11 @@ void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<float> i
 
     previous_tail_.setSize (1, partition_size_samples);
     previous_tail_.clear ();
+}
+
+void TimeDistributedUPC::Reset ()
+{
+    frequency_delay_line_->Clear ();
+    previous_tail_.clear ();
+    stage_buffers_->Clear ();
 }

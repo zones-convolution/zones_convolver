@@ -41,6 +41,12 @@ void StageBuffers::PromoteStages ()
     head_position_ = (head_position_ + 1) % kNumStages;
 }
 
+void StageBuffers::Clear ()
+{
+    for (auto & stage : stages_)
+        stage.Clear ();
+}
+
 void DecompositionSchedule::ForwardDecompositionSchedule (int num_decompositions,
                                                           int fft_size,
                                                           int num_blocks,

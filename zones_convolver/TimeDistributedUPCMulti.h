@@ -1,4 +1,5 @@
 #pragma once
+
 #include "TimeDistributedUPC.h"
 
 class TimeDistributedUPCMulti
@@ -12,4 +13,5 @@ public:
     void Reset ();
 
 private:
+    std::vector<TimeDistributedUPC> tdupcs_;
 };
