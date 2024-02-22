@@ -29,10 +29,10 @@ private:
 
     std::unique_ptr<UniformPartitionedConvolver> upc_;
 
-    int num_tdupc_;
     std::vector<TimeDistributedUPCMulti> tdupcs_;
     std::vector<int> sub_convolver_delays_;
 
+    juce::AudioBuffer<float> process_buffer_;
     juce::AudioBuffer<float> sub_convolver_delay_buffer_;
     CircularBuffer circular_buffer_ {sub_convolver_delay_buffer_};
 };
