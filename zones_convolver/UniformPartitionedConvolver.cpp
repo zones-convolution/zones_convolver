@@ -90,7 +90,8 @@ void UniformPartitionedConvolver::Process (
 
 void UniformPartitionedConvolver::Reset ()
 {
-    frequency_delay_line_->Clear ();
     saved_inputs_.clear ();
+
+    frequency_delay_line_->Clear ();
     convolved_output_->Clear ();
 }
