@@ -19,9 +19,9 @@ private:
         int partition_size_blocks;
         int num_partitions;
 
-        [[nodiscard]] int GetSubConvolverSizeSamples () const
+        [[nodiscard]] int GetSubConvolverSizeSamples (int block_size) const
         {
-            return partition_size_blocks * num_partitions;
+            return partition_size_blocks * num_partitions * block_size;
         }
     };
 

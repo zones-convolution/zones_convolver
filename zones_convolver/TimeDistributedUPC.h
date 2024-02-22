@@ -3,6 +3,7 @@
 #include "util/ComplexBuffer.h"
 #include "util/DecompositionSchedule.h"
 #include "util/FrequencyDelayLine.h"
+#include "util/Partitioning.h"
 
 #include <juce_dsp/juce_dsp.h>
 
@@ -10,7 +11,7 @@ class TimeDistributedUPC
 {
 public:
     TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
-                        int partition_size_samples,
+                        int partition_size_blocks,
                         juce::dsp::AudioBlock<const float> ir_segment);
     void Process (const juce::dsp::ProcessContextReplacing<float> & replacing);
     void Reset ();

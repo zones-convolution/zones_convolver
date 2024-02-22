@@ -58,8 +58,8 @@ TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_
 
     auto partition_scheme = GetPartitionScheme (block_size, ir_num_samples);
 
-    const auto upc_layout = partition_scheme [0];
-    auto offset = upc_layout.GetSubConvolverSizeSamples ();
+    const auto upc_layout = partition_scheme.front ();
+    auto offset = upc_layout.GetSubConvolverSizeSamples (block_size);
     auto upc_ir_segment = ir_block.getSubBlock (0, offset);
     upc_ = std::make_unique<UniformPartitionedConvolver> (spec, upc_ir_segment);
 
@@ -69,18 +69,19 @@ TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_
     for (auto tdupc_index = 0; tdupc_index < num_tdupc; ++tdupc_index)
     {
         const auto & layout = partition_scheme [tdupc_index];
-        auto tdupc_size = layout.GetSubConvolverSizeSamples ();
-        auto ir_segment = ir_block.getSubBlock (offset, tdupc_size);
+        auto tdupc_size = layout.GetSubConvolverSizeSamples (block_size);
+        auto ir_segment =
+            ir_block.getSubBlock (offset, std::min (tdupc_size, ir_num_samples - offset));
+        auto partition_size = layout.partition_size_blocks * block_size;
         tdupcs_.emplace_back (spec, layout.partition_size_blocks, ir_segment);
-        sub_convolver_delays_.push_back (offset - (layout.partition_size_blocks * block_size));
+        auto sub_convolver_delay = offset - (2 * partition_size) + block_size;
+        sub_convolver_delays_.push_back (sub_convolver_delay);
         offset += tdupc_size;
     }
 
     if (num_tdupc > 0)
     {
-        auto sub_convolver_delay_size = sub_convolver_delays_.back () + block_size;
-
-        sub_convolver_delay_buffer_.setSize (num_channels, sub_convolver_delay_size);
+        sub_convolver_delay_buffer_.setSize (num_channels, sub_convolver_delays_.back ());
         sub_convolver_delay_buffer_.clear ();
 
         process_buffer_.setSize (num_channels, block_size);

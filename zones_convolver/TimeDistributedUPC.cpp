@@ -3,12 +3,14 @@
 #include "util/FFT.h"
 
 TimeDistributedUPC::TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
-                                        int partition_size_samples,
+                                        int partition_size_blocks,
                                         juce::dsp::AudioBlock<const float> ir_segment)
 {
+    auto partition_size_samples = static_cast<int> (spec.maximumBlockSize * partition_size_blocks);
     partition_size_samples_ = partition_size_samples;
 
-    auto num_blocks_in_partition = partition_size_samples_ / spec.maximumBlockSize;
+    auto num_blocks_in_partition =
+        static_cast<int> (partition_size_samples_ / spec.maximumBlockSize);
 
     num_decompositions_ = static_cast<int> (std::log2 (num_blocks_in_partition / 2));
     num_phases_ = num_blocks_in_partition;
@@ -102,10 +104,8 @@ void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<const fl
                                                   int partition_size_samples)
 {
     filter_partitions_.clear ();
-
     auto filter_size = ir_segment.getNumSamples ();
-    num_partitions_ = static_cast<int> (
-        std::ceil (static_cast<float> (filter_size) / static_cast<float> (partition_size_samples)));
+    num_partitions_ = GetNumPartitionsRequiredForSegment (partition_size_samples, filter_size);
 
     frequency_delay_line_ =
         std::make_unique<FrequencyDelayLine> (1, num_partitions_, fft_num_points_);
