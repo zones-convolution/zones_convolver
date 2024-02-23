@@ -13,7 +13,9 @@ public:
     TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
                         int partition_size_blocks,
                         const std::vector<ComplexBuffer> & filter_partitions,
-                        int filter_channel);
+                        int filter_channel,
+                        int transform_offset,
+                        int num_decompositions);
     void Process (const juce::dsp::ProcessContextReplacing<float> & replacing);
     void Reset ();
 
@@ -25,6 +27,7 @@ private:
     int phase_;
     int num_decompositions_;
     int num_partitions_;
+    int transform_offset_;
 
     const std::vector<ComplexBuffer> & filter_partitions_;
     int filter_channel_;

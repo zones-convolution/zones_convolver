@@ -53,9 +53,7 @@ void DecompositionSchedule::ForwardDecompositionSchedule (int num_decompositions
                                                           std::complex<float> * data,
                                                           int phase)
 {
-    FFTDecomposition::SegmentedForwardDecompositionRadix2 (data, fft_size, 1, num_blocks, phase);
-
-    for (auto decomposition_level = 1; decomposition_level < num_decompositions;
+    for (auto decomposition_level = 0; decomposition_level < num_decompositions;
          ++decomposition_level)
     {
         auto num_segments = static_cast<int> (std::pow (2, decomposition_level));
@@ -75,7 +73,7 @@ void DecompositionSchedule::InverseDecompositionSchedule (int num_decompositions
                                                           std::complex<float> * data,
                                                           int phase)
 {
-    for (auto decomposition_level = num_decompositions - 1; decomposition_level >= 1;
+    for (auto decomposition_level = num_decompositions - 1; decomposition_level >= 0;
          --decomposition_level)
     {
         auto num_segments = static_cast<int> (std::pow (2, decomposition_level));
@@ -84,6 +82,4 @@ void DecompositionSchedule::InverseDecompositionSchedule (int num_decompositions
             FFTDecomposition::SegmentedInverseDecompositionRadix2 (
                 data, fft_size, num_segments, num_steps, phase);
     }
-
-    FFTDecomposition::SegmentedInverseDecompositionRadix2 (data, fft_size, 1, num_blocks, phase);
 }

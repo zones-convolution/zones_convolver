@@ -30,8 +30,17 @@ TimeDistributedUPCMulti::TimeDistributedUPCMulti (const juce::dsp::ProcessSpec &
     }
 
     for (auto channel_index = 0; channel_index < num_channels; ++channel_index)
-        tdupcs_.emplace_back (
-            spec, partition_size_blocks, filter_partitions_, channel_index % ir_num_channels);
+    {
+        auto num_decompositions = static_cast<int> (std::log2 (partition_size_blocks / 2)) - 1;
+        auto transform_offset = channel_index * (partition_size_blocks / 2);
+
+        tdupcs_.emplace_back (spec,
+                              partition_size_blocks,
+                              filter_partitions_,
+                              channel_index % ir_num_channels,
+                              transform_offset,
+                              num_decompositions);
+    }
 }
 
 void TimeDistributedUPCMulti::Process (const juce::dsp::ProcessContextReplacing<float> & replacing)
