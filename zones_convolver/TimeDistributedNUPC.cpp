@@ -73,7 +73,8 @@ TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_
         auto ir_segment =
             ir_block.getSubBlock (offset, std::min (tdupc_size, ir_num_samples - offset));
         auto partition_size = layout.partition_size_blocks * block_size;
-        tdupcs_.emplace_back (spec, layout.partition_size_blocks, ir_segment);
+        tdupcs_.push_back (std::make_shared<TimeDistributedUPCMulti> (
+            spec, layout.partition_size_blocks, ir_segment));
         auto sub_convolver_delay = offset - (2 * partition_size) + block_size;
         sub_convolver_delays_.push_back (sub_convolver_delay);
         offset += tdupc_size;
@@ -100,7 +101,7 @@ void TimeDistributedNUPC::Process (const juce::dsp::ProcessContextReplacing<floa
     for (auto tdupc_index = 0; tdupc_index < num_tdupc; ++tdupc_index)
     {
         process_block.copyFrom (output_block);
-        tdupcs_ [tdupc_index].Process (process_block);
+        tdupcs_ [tdupc_index]->Process (process_block);
 
         auto delayed_block = circular_buffer_.GetNext (sub_convolver_delays_ [tdupc_index], false);
         delayed_block.AddFrom (process_block);
@@ -121,6 +122,6 @@ void TimeDistributedNUPC::Reset ()
     sub_convolver_delay_buffer_.clear ();
     process_buffer_.clear ();
     upc_->Reset ();
-    for (auto & tdupc : tdupcs_)
-        tdupc.Reset ();
+    for (auto tdupc : tdupcs_)
+        tdupc->Reset ();
 }

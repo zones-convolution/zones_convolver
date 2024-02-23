@@ -28,8 +28,8 @@ private:
     static std::vector<PartitionLayout> GetPartitionScheme (int block_size, int ir_num_samples);
 
     std::unique_ptr<UniformPartitionedConvolver> upc_;
+    std::vector<std::shared_ptr<TimeDistributedUPCMulti>> tdupcs_;
 
-    std::vector<TimeDistributedUPCMulti> tdupcs_;
     std::vector<int> sub_convolver_delays_;
 
     juce::AudioBuffer<float> process_buffer_;

@@ -26,7 +26,7 @@ private:
     int num_decompositions_;
     int num_partitions_;
 
-    const std::vector<const ComplexBuffer> & filter_partitions_;
+    const std::vector<ComplexBuffer> & filter_partitions_;
     int filter_channel_;
     std::unique_ptr<FrequencyDelayLine> frequency_delay_line_;
     std::unique_ptr<StageBuffers> stage_buffers_;

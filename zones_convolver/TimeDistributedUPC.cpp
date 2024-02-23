@@ -11,11 +11,12 @@ TimeDistributedUPC::TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
 {
     auto partition_size_samples = static_cast<int> (spec.maximumBlockSize * partition_size_blocks);
     partition_size_samples_ = partition_size_samples;
+    num_partitions_ = filter_partitions.size ();
     fft_num_points_ = 2 * partition_size_samples_;
     num_decompositions_ = static_cast<int> (std::log2 (partition_size_blocks / 2));
     num_phases_ = partition_size_blocks;
     phase_ = 0;
-
+    
     stage_buffers_ = std::make_unique<StageBuffers> (fft_num_points_);
     frequency_delay_line_ =
         std::make_unique<FrequencyDelayLine> (1, num_partitions_, fft_num_points_);
