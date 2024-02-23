@@ -14,4 +14,5 @@ public:
 
 private:
     std::vector<TimeDistributedUPC> tdupcs_;
+    std::vector<ComplexBuffer> filter_partitions_;
 };
