@@ -44,7 +44,7 @@ def is_transition_viable(first: tuple[int, int, int], second: tuple[int, int, in
     # Check for clearance because we moved to a new subfilter
     if q2 == 1:
         clearance = n1 - s2 + 1
-        clearance_condition = clearance >= 1
+        clearance_condition = clearance >= s2
 
     condition_1 = s1 == q1 and q2 == 1 and s2 >= s1
     condition_2 = s1 == s2 and q2 == (q1 + 1)
@@ -168,4 +168,10 @@ def find_optimum(latency, ir_size):
 
 
 if __name__ == '__main__':
-    find_optimum(1024, 65536)
+    latencies = [64]
+    ir_sizes = [1024, 2048, 4096, 8192, 16384, 32768, 65536]
+
+    for latency in latencies:
+        for ir_size in ir_sizes:
+            print("Latency: {}, Ir Size: {}".format(latency, ir_size))
+            find_optimum(latency, ir_size)
