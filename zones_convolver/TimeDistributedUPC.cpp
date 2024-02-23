@@ -4,22 +4,24 @@
 
 TimeDistributedUPC::TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
                                         int partition_size_blocks,
-                                        juce::dsp::AudioBlock<const float> ir_segment)
+                                        const std::vector<ComplexBuffer> & filter_partitions,
+                                        int filter_channel)
+    : filter_partitions_ (filter_partitions)
+    , filter_channel_ (filter_channel)
 {
     auto partition_size_samples = static_cast<int> (spec.maximumBlockSize * partition_size_blocks);
     partition_size_samples_ = partition_size_samples;
-
-    auto num_blocks_in_partition =
-        static_cast<int> (partition_size_samples_ / spec.maximumBlockSize);
-
-    num_decompositions_ = static_cast<int> (std::log2 (num_blocks_in_partition / 2));
-    num_phases_ = num_blocks_in_partition;
+    fft_num_points_ = 2 * partition_size_samples_;
+    num_decompositions_ = static_cast<int> (std::log2 (partition_size_blocks / 2));
+    num_phases_ = partition_size_blocks;
     phase_ = 0;
 
-    fft_num_points_ = 2 * partition_size_samples_;
     stage_buffers_ = std::make_unique<StageBuffers> (fft_num_points_);
+    frequency_delay_line_ =
+        std::make_unique<FrequencyDelayLine> (1, num_partitions_, fft_num_points_);
+    previous_tail_.setSize (1, partition_size_samples);
 
-    PrepareFilterPartitions (ir_segment, partition_size_samples);
+    Reset ();
 }
 
 void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float> & replacing)
@@ -66,7 +68,7 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
     for (auto fdl_index = 0; fdl_index < num_partitions_; ++fdl_index)
     {
         auto fdl_block = frequency_delay_line_->GetBlockWithOffset (fdl_index).GetReadPointer (0);
-        auto filter = filter_partitions_ [fdl_index].GetReadPointer (0);
+        auto filter = filter_partitions_ [fdl_index].GetReadPointer (filter_channel_);
 
         for (auto point_index = 0; point_index < half_sub_fft_size; ++point_index)
         {
@@ -98,32 +100,6 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
     }
 
     phase_ = (phase_ + 1) % num_phases_;
-}
-
-void TimeDistributedUPC::PrepareFilterPartitions (juce::dsp::AudioBlock<const float> ir_segment,
-                                                  int partition_size_samples)
-{
-    filter_partitions_.clear ();
-    auto filter_size = ir_segment.getNumSamples ();
-    num_partitions_ = GetNumPartitionsRequiredForSegment (partition_size_samples, filter_size);
-
-    frequency_delay_line_ =
-        std::make_unique<FrequencyDelayLine> (1, num_partitions_, fft_num_points_);
-
-    for (auto partition_index = 0; partition_index < num_partitions_; ++partition_index)
-    {
-        auto offset = partition_index * partition_size_samples;
-        auto filter_partition_block = ir_segment.getSubBlock (
-            offset, std::min (partition_size_samples, static_cast<int> (filter_size - offset)));
-        auto filter_partition = ComplexBuffer (fft_num_points_, 1);
-        filter_partition.Clear ();
-        filter_partition.CopyFromAudioBlock (filter_partition_block);
-        ForwardFFTUnordered (filter_partition.GetWritePointer (0), fft_num_points_);
-        filter_partitions_.emplace_back (std::move (filter_partition));
-    }
-
-    previous_tail_.setSize (1, partition_size_samples);
-    previous_tail_.clear ();
 }
 
 void TimeDistributedUPC::Reset ()

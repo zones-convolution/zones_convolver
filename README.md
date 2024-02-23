@@ -23,11 +23,31 @@
   </p>
 </div>
 
-# Usage
+## Usage
 
-# References
+## Contributing
 
-* https://github.com/othneildrew/Best-README-Template/tree/master -> Readme boilerplate
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Contact
+
+Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+
+Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Acknowledgments
+
+* [Readme Boilerplate](https://github.com/othneildrew/Best-README-Template)
+* []()
+* []()
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 [contributors-shield]: https://img.shields.io/github/contributors/github_username/repo_name.svg?style=for-the-badge
 
