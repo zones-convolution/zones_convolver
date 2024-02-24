@@ -2,6 +2,9 @@ import math
 import networkx as nx
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import json
+import numpy as np
+import time
 
 
 def plot_graph(graph, backtrace):
@@ -163,15 +166,36 @@ def find_optimum(latency, ir_size):
             normal_backtrace[key] = math.ceil(normal_backtrace[key] / (key / latency))
         normal_backtraces.append(normal_backtrace)
 
-    print(normal_backtraces)
+    return normal_backtraces
     # plot_graph(graph, backtraces[-1])
 
 
+def ascending_powers_of_2_from(nth_power_of_2: int, n_powers: int):
+    ith_power_of_2 = int(math.log2(nth_power_of_2))
+    list = []
+    for i in range(n_powers + ith_power_of_2):
+        list.append(2 ** i)
+    return list[ith_power_of_2:]
+
+
 if __name__ == '__main__':
-    latencies = [64]
-    ir_sizes = [1024, 2048, 4096, 8192, 16384, 32768, 65536]
+    latencies = [16, 32, 64, 128, 256]
 
     for latency in latencies:
+        results = {}
+        ir_sizes = ascending_powers_of_2_from(latency, 12)
         for ir_size in ir_sizes:
-            print("Latency: {}, Ir Size: {}".format(latency, ir_size))
-            find_optimum(latency, ir_size)
+            start_time = time.perf_counter()
+
+            result = find_optimum(latency, ir_size)
+
+            end_time = time.perf_counter()
+
+            elapsed_time = end_time - start_time
+            print("{}x{}, Elapsed time: {}".format(latency, ir_size, elapsed_time))
+
+            if len(result) > 0:
+                results[ir_size] = result[-1]
+
+        with open("garcia_results_{}.json".format(latency), "w") as outfile:
+            json.dump(results, outfile)
