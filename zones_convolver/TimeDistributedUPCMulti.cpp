@@ -1,5 +1,28 @@
 #include "TimeDistributedUPCMulti.h"
 
+static int LargestPowerOf2In (int n)
+{
+    if (n <= 0)
+        return 0;
+
+    return static_cast<int> (std::pow (2, std::floor (std::log2 (n))));
+}
+
+static std::vector<int> GetPowersOf2In (int n)
+{
+    std::vector<int> decomposition;
+
+    while (n > 0)
+    {
+        auto largest_power_of_2 = LargestPowerOf2In (n);
+        decomposition.push_back (largest_power_of_2);
+
+        n -= largest_power_of_2;
+    }
+
+    return decomposition;
+}
+
 TimeDistributedUPCMulti::TimeDistributedUPCMulti (const juce::dsp::ProcessSpec & spec,
                                                   int partition_size_blocks,
                                                   juce::dsp::AudioBlock<const float> ir_segment)
@@ -29,19 +52,25 @@ TimeDistributedUPCMulti::TimeDistributedUPCMulti (const juce::dsp::ProcessSpec &
         filter_partitions_.emplace_back (std::move (filter_partition));
     }
 
-    for (auto channel_index = 0; channel_index < num_channels; ++channel_index)
+    auto channel_offset = 0;
+    for (const auto & power_of_2 : GetPowersOf2In (num_channels))
     {
-        auto reduction = std::log2 (num_channels);
+        auto reduction = std::log2 (power_of_2);
         auto num_decompositions =
             static_cast<int> (std::log2 (partition_size_blocks / 2)) - reduction;
-        auto transform_offset = channel_index * (partition_size_blocks / num_channels);
 
-        tdupcs_.emplace_back (spec,
-                              partition_size_blocks,
-                              filter_partitions_,
-                              channel_index % ir_num_channels,
-                              transform_offset,
-                              num_decompositions);
+        for (auto channel_index = 0; channel_index < power_of_2; ++channel_index)
+        {
+            auto transform_offset = channel_index * (partition_size_blocks / num_channels);
+            tdupcs_.emplace_back (spec,
+                                  partition_size_blocks,
+                                  filter_partitions_,
+                                  (channel_index + channel_offset) % ir_num_channels,
+                                  transform_offset,
+                                  num_decompositions);
+        }
+
+        channel_offset += power_of_2;
     }
 }
 
