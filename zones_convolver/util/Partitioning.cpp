@@ -56,7 +56,7 @@ static void ReduceSchemeToFitIR (PartitionScheme & scheme, int sample_difference
         auto last_partition_size_samples = block_size * last_partition.partition_size_blocks;
         auto num_partitions_to_remove = static_cast<int> (
             std::floor (remaining_samples_to_remove / last_partition_size_samples));
-        last_partition.partition_size_blocks -= num_partitions_to_remove;
+        last_partition.num_partitions -= num_partitions_to_remove;
     }
     else
     {
@@ -74,18 +74,10 @@ GetPartitionScheme (const GarciaResults & garcia_results, int block_size, int ir
 
     auto sample_difference = ir_num_samples - nearest_scheme.ir_size_samples;
 
-    if (IsLastComputedScheme (nearest_scheme, *partitioning_results))
-    {
-        // Could use Gardener here instead hence the branch...
+    if (sample_difference > 0)
         ExtendSchemeToFitIR (nearest_scheme, sample_difference, block_size);
-    }
     else
-    {
-        if (sample_difference > 0)
-            ExtendSchemeToFitIR (nearest_scheme, sample_difference, block_size);
-        else
-            ReduceSchemeToFitIR (nearest_scheme, sample_difference, block_size);
-    }
+        ReduceSchemeToFitIR (nearest_scheme, sample_difference, block_size);
 
     return nearest_scheme.layout;
 }
