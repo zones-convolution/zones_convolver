@@ -1,55 +1,91 @@
 #include "Partitioning.h"
 
-// std::vector<PartitionLayout>
-// GetPartitionScheme (const GarciaResults & garcia_results, int block_size, int ir_num_samples)
-//{
-//     std::vector<PartitionLayout> partition_scheme;
-//
-//     static constexpr auto kMaxNumPartitionsInUPC = 8;
-//     auto max_num_samples_in_upc = kMaxNumPartitionsInUPC * block_size;
-//     auto num_samples_in_upc = std::min (ir_num_samples, max_num_samples_in_upc);
-//     auto num_partitions_in_upc =
-//         GetNumPartitionsRequiredForSegment (block_size, num_samples_in_upc);
-//     partition_scheme.emplace_back (
-//         PartitionLayout {.partition_size_blocks = 1, .num_partitions = num_partitions_in_upc});
-//
-//     auto remaining_samples_to_convolve = ir_num_samples - num_samples_in_upc;
-//     if (remaining_samples_to_convolve > 0)
-//     {
-//         static constexpr auto kMaxNumPartitionsPrimary = 8;
-//         const auto kPrimaryPartitionSizeBlocks = 4;
-//         const auto kPrimaryPartitionSizeSamples = kPrimaryPartitionSizeBlocks * block_size;
-//
-//         auto num_samples_primary = std::min (
-//             remaining_samples_to_convolve, kPrimaryPartitionSizeSamples *
-//             kMaxNumPartitionsPrimary);
-//
-//         auto num_partitions_primary =
-//             GetNumPartitionsRequiredForSegment (kPrimaryPartitionSizeSamples,
-//             num_samples_primary);
-//
-//         partition_scheme.emplace_back (
-//             PartitionLayout {.partition_size_blocks = kPrimaryPartitionSizeBlocks,
-//                              .num_partitions = num_partitions_primary});
-//
-//         remaining_samples_to_convolve -= num_samples_primary;
-//     }
-//
-//     if (remaining_samples_to_convolve > 0)
-//     {
-//         const auto kSecondaryPartitionSizeBlocks = 16;
-//         const auto kSecondaryPartitionSizeSamples = kSecondaryPartitionSizeBlocks * block_size;
-//         auto num_partitions_secondary = GetNumPartitionsRequiredForSegment (
-//             kSecondaryPartitionSizeSamples, remaining_samples_to_convolve);
-//         partition_scheme.emplace_back (
-//             PartitionLayout {.partition_size_blocks = kSecondaryPartitionSizeBlocks,
-//                              .num_partitions = num_partitions_secondary});
-//     }
-//
-//     return partition_scheme;
-// }
+static PartitionScheme FindNearestPartitionScheme (const PartitioningResults * results,
+                                                   int ir_num_samples)
+{
+    auto sorted_results = *results;
+    std::sort (sorted_results.begin (),
+               sorted_results.end (),
+               [] (const PartitionScheme & a, const PartitionScheme & b)
+               { return a.ir_size_samples < b.ir_size_samples; });
+
+    for (auto scheme_index = 1; scheme_index < sorted_results.size (); ++scheme_index)
+    {
+        const auto & scheme = sorted_results.at (scheme_index);
+
+        if (ir_num_samples < scheme.ir_size_samples)
+        {
+            auto upper_scheme_samples = sorted_results.at (scheme_index).ir_size_samples;
+            auto lower_scheme_samples = sorted_results.at (scheme_index - 1).ir_size_samples;
+
+            auto lower_dif = std::abs (ir_num_samples - lower_scheme_samples);
+            auto higher_dif = std::abs (ir_num_samples - upper_scheme_samples);
+
+            return sorted_results.at (higher_dif < lower_dif ? scheme_index : scheme_index - 1);
+        }
+    }
+
+    return sorted_results.back ();
+}
+
+static bool IsLastComputedScheme (const PartitionScheme & scheme,
+                                  const std::vector<PartitionScheme> & results)
+{
+    return results.back ().ir_size_samples == scheme.ir_size_samples;
+}
+
+static void ExtendSchemeToFitIR (PartitionScheme & scheme, int sample_difference, int block_size)
+{
+    auto & last_partition = scheme.layout.back ();
+    auto last_partition_size_samples = block_size * last_partition.partition_size_blocks;
+
+    auto num_partitions_to_add =
+        static_cast<int> (std::ceil (sample_difference / last_partition_size_samples));
+    last_partition.num_partitions += num_partitions_to_add;
+}
+
+static void ReduceSchemeToFitIR (PartitionScheme & scheme, int sample_difference, int block_size)
+{
+    auto remaining_samples_to_remove = std::abs (sample_difference);
+
+    auto & last_partition = scheme.layout.back ();
+    auto num_samples_in_last_partition = last_partition.GetSubConvolverSizeSamples (block_size);
+
+    if (num_samples_in_last_partition > remaining_samples_to_remove)
+    {
+        auto last_partition_size_samples = block_size * last_partition.partition_size_blocks;
+        auto num_partitions_to_remove = static_cast<int> (
+            std::floor (remaining_samples_to_remove / last_partition_size_samples));
+        last_partition.partition_size_blocks -= num_partitions_to_remove;
+    }
+    else
+    {
+        scheme.layout.pop_back ();
+        ReduceSchemeToFitIR (
+            scheme, remaining_samples_to_remove - num_samples_in_last_partition, block_size);
+    }
+}
 
 std::vector<PartitionLayout>
 GetPartitionScheme (const GarciaResults & garcia_results, int block_size, int ir_num_samples)
 {
+    auto partitioning_results = garcia_results.at (block_size);
+    auto nearest_scheme = FindNearestPartitionScheme (partitioning_results, ir_num_samples);
+
+    auto sample_difference = ir_num_samples - nearest_scheme.ir_size_samples;
+
+    if (IsLastComputedScheme (nearest_scheme, *partitioning_results))
+    {
+        // Could use Gardener here instead hence the branch...
+        ExtendSchemeToFitIR (nearest_scheme, sample_difference, block_size);
+    }
+    else
+    {
+        if (sample_difference > 0)
+            ExtendSchemeToFitIR (nearest_scheme, sample_difference, block_size);
+        else
+            ReduceSchemeToFitIR (nearest_scheme, sample_difference, block_size);
+    }
+
+    return nearest_scheme.layout;
 }
