@@ -1,5 +1,6 @@
 #include "zones_convolver.h"
 
+#include "PartitionSchemes.cpp"
 #include "TimeDistributedNUPC.cpp"
 #include "TimeDistributedUPC.cpp"
 #include "TimeDistributedUPCMulti.cpp"
@@ -10,5 +11,6 @@
 #include "util/FFT.cpp"
 #include "util/FFTDecomposition.cpp"
 #include "util/FrequencyDelayLine.cpp"
+#include "util/Partitioning.cpp"
 #include "util/SplitBlock.cpp"
 #include "util/TimeDomainConvolver.cpp"

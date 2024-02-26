@@ -1,7 +1,9 @@
 #pragma once
 
+#include "PartitionSchemes.h"
 #include "TimeDistributedUPCMulti.h"
 #include "UniformPartitionedConvolver.h"
+#include "util/Partitioning.h"
 
 #include <juce_dsp/juce_dsp.h>
 
@@ -14,19 +16,6 @@ public:
     void Reset ();
 
 private:
-    struct PartitionLayout
-    {
-        int partition_size_blocks;
-        int num_partitions;
-
-        [[nodiscard]] int GetSubConvolverSizeSamples (int block_size) const
-        {
-            return partition_size_blocks * num_partitions * block_size;
-        }
-    };
-
-    static std::vector<PartitionLayout> GetPartitionScheme (int block_size, int ir_num_samples);
-
     std::unique_ptr<UniformPartitionedConvolver> upc_;
     std::vector<std::shared_ptr<TimeDistributedUPCMulti>> tdupcs_;
 

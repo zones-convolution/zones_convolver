@@ -1,52 +1,5 @@
 #include "TimeDistributedNUPC.h"
 
-std::vector<TimeDistributedNUPC::PartitionLayout>
-TimeDistributedNUPC::GetPartitionScheme (int block_size, int ir_num_samples)
-{
-    std::vector<PartitionLayout> partition_scheme;
-
-    static constexpr auto kMaxNumPartitionsInUPC = 8;
-    auto max_num_samples_in_upc = kMaxNumPartitionsInUPC * block_size;
-    auto num_samples_in_upc = std::min (ir_num_samples, max_num_samples_in_upc);
-    auto num_partitions_in_upc =
-        GetNumPartitionsRequiredForSegment (block_size, num_samples_in_upc);
-    partition_scheme.emplace_back (
-        PartitionLayout {.partition_size_blocks = 1, .num_partitions = num_partitions_in_upc});
-
-    auto remaining_samples_to_convolve = ir_num_samples - num_samples_in_upc;
-    if (remaining_samples_to_convolve > 0)
-    {
-        static constexpr auto kMaxNumPartitionsPrimary = 8;
-        const auto kPrimaryPartitionSizeBlocks = 4;
-        const auto kPrimaryPartitionSizeSamples = kPrimaryPartitionSizeBlocks * block_size;
-
-        auto num_samples_primary = std::min (
-            remaining_samples_to_convolve, kPrimaryPartitionSizeSamples * kMaxNumPartitionsPrimary);
-
-        auto num_partitions_primary =
-            GetNumPartitionsRequiredForSegment (kPrimaryPartitionSizeSamples, num_samples_primary);
-
-        partition_scheme.emplace_back (
-            PartitionLayout {.partition_size_blocks = kPrimaryPartitionSizeBlocks,
-                             .num_partitions = num_partitions_primary});
-
-        remaining_samples_to_convolve -= num_samples_primary;
-    }
-
-    if (remaining_samples_to_convolve > 0)
-    {
-        const auto kSecondaryPartitionSizeBlocks = 16;
-        const auto kSecondaryPartitionSizeSamples = kSecondaryPartitionSizeBlocks * block_size;
-        auto num_partitions_secondary = GetNumPartitionsRequiredForSegment (
-            kSecondaryPartitionSizeSamples, remaining_samples_to_convolve);
-        partition_scheme.emplace_back (
-            PartitionLayout {.partition_size_blocks = kSecondaryPartitionSizeBlocks,
-                             .num_partitions = num_partitions_secondary});
-    }
-
-    return partition_scheme;
-}
-
 TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_block,
                                           const juce::dsp::ProcessSpec & spec)
 {
@@ -56,7 +9,7 @@ TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_
 
     jassert (ir_num_samples > 0);
 
-    auto partition_scheme = GetPartitionScheme (block_size, ir_num_samples);
+    auto partition_scheme = GetPartitionScheme (kGarciaResults, block_size, ir_num_samples);
 
     const auto upc_layout = partition_scheme.front ();
     auto offset = upc_layout.GetSubConvolverSizeSamples (block_size);
