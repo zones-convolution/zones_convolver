@@ -19,6 +19,7 @@ public:
 
     void Clear ();
     void ComplexMultiplyFrom (const ComplexBuffer & a, const ComplexBuffer & b);
+    void AddFrom (const ComplexBuffer & buffer);
     void ComplexMultiplyAccumulateFrom (const ComplexBuffer & a, const ComplexBuffer & b);
     void CopyFromAudioBlock (juce::dsp::AudioBlock<const float> block);
 

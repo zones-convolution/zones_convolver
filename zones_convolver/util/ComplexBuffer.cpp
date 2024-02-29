@@ -55,6 +55,15 @@ void ComplexBuffer::ComplexMultiplyFrom (const ComplexBuffer & a, const ComplexB
         channel_data_ [point_index] = a.channel_data_ [point_index] * b.channel_data_ [point_index];
 }
 
+void ComplexBuffer::AddFrom (const ComplexBuffer & buffer)
+{
+    jassert (num_channels_ == buffer.num_channels_);
+    jassert (num_points_ == buffer.num_points_);
+
+    for (auto point_index = 0; point_index < channel_data_.size (); ++point_index)
+        channel_data_ [point_index] += buffer.channel_data_ [point_index];
+}
+
 void ComplexBuffer::ComplexMultiplyAccumulateFrom (const ComplexBuffer & a, const ComplexBuffer & b)
 {
     jassert (num_channels_ == a.num_channels_ && a.num_channels_ == b.num_channels_);
