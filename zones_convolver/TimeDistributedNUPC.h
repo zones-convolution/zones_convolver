@@ -19,9 +19,14 @@ private:
     std::unique_ptr<UniformPartitionedConvolver> upc_;
     std::vector<std::shared_ptr<TimeDistributedUPCMulti>> tdupcs_;
 
+    int max_block_size_ = 0;
+    int num_samples_collected_ = 0;
+
+    juce::AudioBuffer<float> saved_input_buffer_;
+
     std::vector<int> sub_convolver_delays_;
 
     juce::AudioBuffer<float> process_buffer_;
     juce::AudioBuffer<float> sub_convolver_delay_buffer_;
-    CircularBuffer circular_buffer_ {sub_convolver_delay_buffer_};
+    CircularBuffer result_buffer_ {sub_convolver_delay_buffer_};
 };
