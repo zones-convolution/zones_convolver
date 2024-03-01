@@ -3,18 +3,25 @@
 TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_block,
                                           const juce::dsp::ProcessSpec & spec)
 {
-    const auto num_channels = static_cast<int> (spec.numChannels);
-    const auto block_size = static_cast<int> (spec.maximumBlockSize);
+    auto modified_spec = spec;
+    modified_spec.maximumBlockSize = 2048;
+
+    const auto num_channels = static_cast<int> (modified_spec.numChannels);
+    const auto block_size = static_cast<int> (modified_spec.maximumBlockSize);
     const auto ir_num_samples = static_cast<int> (ir_block.getNumSamples ());
 
     jassert (ir_num_samples > 0);
 
-    auto partition_scheme = GetPartitionScheme (kGarciaResults, block_size, ir_num_samples);
+    //    auto partition_scheme = GetPartitionScheme (kGarciaResults, block_size, ir_num_samples);
+    std::vector<PartitionLayout> partition_scheme = {
+        PartitionLayout {.partition_size_blocks = 1, .num_partitions = 20000}};
 
     const auto upc_layout = partition_scheme.front ();
     auto offset = upc_layout.GetSubConvolverSizeSamples (block_size);
+    offset = std::min (ir_num_samples, offset);
+
     auto upc_ir_segment = ir_block.getSubBlock (0, offset);
-    upc_ = std::make_unique<UniformPartitionedConvolver> (spec, upc_ir_segment);
+    upc_ = std::make_unique<UniformPartitionedConvolver> (modified_spec, upc_ir_segment);
 
     partition_scheme.erase (partition_scheme.begin ());
     auto num_tdupc = partition_scheme.size ();
@@ -27,7 +34,7 @@ TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_
             ir_block.getSubBlock (offset, std::min (tdupc_size, ir_num_samples - offset));
         auto partition_size = layout.partition_size_blocks * block_size;
         tdupcs_.push_back (std::make_shared<TimeDistributedUPCMulti> (
-            spec, layout.partition_size_blocks, ir_segment));
+            modified_spec, layout.partition_size_blocks, ir_segment));
         auto sub_convolver_delay = offset - (2 * partition_size) + block_size;
         sub_convolver_delays_.push_back (sub_convolver_delay);
         offset += tdupc_size;

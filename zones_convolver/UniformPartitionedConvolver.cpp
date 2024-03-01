@@ -90,7 +90,7 @@ void UniformPartitionedConvolver::Process (
         auto input_to_copy =
             output_block.getSubBlock (num_samples_processed, num_samples_to_process);
 
-        circular_buffer_.GetNext (num_samples_to_discard_ + num_samples_processed, false)
+        circular_buffer_.GetNext (num_samples_to_discard_ + num_samples_collected_, false)
             .CopyFrom (input_to_copy);
         circular_buffer_.GetNext (0, false).CopyTo (continuous_fdl_block);
 
