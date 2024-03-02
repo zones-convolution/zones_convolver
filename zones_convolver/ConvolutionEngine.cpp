@@ -83,8 +83,9 @@ void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float>
 
     if (is_transitioning && activity_coefficient_ < kTransitionThreshold)
     {
-        // SCHEDULE REMOVE OLD CONVOLVER : TODO
+        convolver_.reset(); // SCHEDULE REMOVE OLD CONVOLVER : TODO
         convolver_ = std::move (pending_convolver_);
+
         pending_convolver_.reset ();
     }
 }

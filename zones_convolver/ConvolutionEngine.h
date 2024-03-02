@@ -108,7 +108,7 @@ public:
 
 private:
     float
-    SmoothedValue (float value_to_smooth, float target, float smooth_time_in_seconds = 1.f) const;
+    SmoothedValue (float value_to_smooth, float target, float smooth_time_in_seconds = 0.2f) const;
 
     std::unique_ptr<TimeDistributedNUPC> convolver_;
     std::unique_ptr<TimeDistributedNUPC> pending_convolver_;

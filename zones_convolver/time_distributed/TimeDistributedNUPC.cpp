@@ -56,26 +56,30 @@ void TimeDistributedNUPC::Process (const juce::dsp::ProcessContextReplacing<floa
     auto num_samples_processed = 0;
     while (num_samples_processed < block_size)
     {
-        if (num_samples_collected_ == 0)
-        {
-            for (auto tdupc_index = 0; tdupc_index < num_tdupc; ++tdupc_index)
-            {
-                process_block.copyFrom (saved_input_block);
-                tdupcs_ [tdupc_index]->Process (process_block);
-
-                auto delayed_block =
-                    result_buffer_.GetNext (sub_convolver_delays_ [tdupc_index], false);
-                delayed_block.AddFrom (process_block);
-            }
-            result_buffer_.GetNext (max_block_size_, true);
-        }
-
         auto num_samples_to_process =
             std::min (block_size - num_samples_processed, max_block_size_ - num_samples_collected_);
 
         auto sub_output_replacing =
             output_block.getSubBlock (num_samples_processed, num_samples_to_process);
-        saved_input_block.getSubBlock (num_samples_collected_).copyFrom (sub_output_replacing);
+
+        if (num_tdupc > 0)
+        {
+            if (num_samples_collected_ == 0)
+            {
+                for (auto tdupc_index = 0; tdupc_index < num_tdupc; ++tdupc_index)
+                {
+                    process_block.copyFrom (saved_input_block);
+                    tdupcs_ [tdupc_index]->Process (process_block);
+
+                    auto delayed_block =
+                        result_buffer_.GetNext (sub_convolver_delays_ [tdupc_index], false);
+                    delayed_block.AddFrom (process_block);
+                }
+                result_buffer_.GetNext (max_block_size_, true);
+            }
+
+            saved_input_block.getSubBlock (num_samples_collected_).copyFrom (sub_output_replacing);
+        }
 
         upc_->Process (sub_output_replacing);
 
