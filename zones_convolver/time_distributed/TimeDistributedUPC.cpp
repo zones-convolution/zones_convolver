@@ -1,6 +1,6 @@
 #include "TimeDistributedUPC.h"
 
-#include "util/FFT.h"
+#include <zones_convolver/util/FFT.h>
 
 TimeDistributedUPC::TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
                                         int partition_size_blocks,

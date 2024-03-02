@@ -14,11 +14,12 @@ BEGIN_JUCE_MODULE_DECLARATION
 END_JUCE_MODULE_DECLARATION
 */
 
+#include "ConvolutionEngine.h"
 #include "PartitionSchemes.h"
-#include "TimeDistributedNUPC.h"
-#include "TimeDistributedUPC.h"
-#include "TimeDistributedUPCMulti.h"
 #include "UniformPartitionedConvolver.h"
+#include "time_distributed/TimeDistributedNUPC.h"
+#include "time_distributed/TimeDistributedUPC.h"
+#include "time_distributed/TimeDistributedUPCMulti.h"
 #include "util/CircularBuffer.h"
 #include "util/ComplexBuffer.h"
 #include "util/DecompositionSchedule.h"

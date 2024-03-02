@@ -1,11 +1,11 @@
 #pragma once
 
-#include "PartitionSchemes.h"
 #include "TimeDistributedUPCMulti.h"
-#include "UniformPartitionedConvolver.h"
-#include "util/Partitioning.h"
 
 #include <juce_dsp/juce_dsp.h>
+#include <zones_convolver/PartitionSchemes.h>
+#include <zones_convolver/UniformPartitionedConvolver.h>
+#include <zones_convolver/util/Partitioning.h>
 
 class TimeDistributedNUPC
 {

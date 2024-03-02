@@ -1,11 +1,10 @@
 #pragma once
 
-#include "util/ComplexBuffer.h"
-#include "util/DecompositionSchedule.h"
-#include "util/FrequencyDelayLine.h"
-#include "util/Partitioning.h"
-
 #include <juce_dsp/juce_dsp.h>
+#include <zones_convolver/util/ComplexBuffer.h>
+#include <zones_convolver/util/DecompositionSchedule.h>
+#include <zones_convolver/util/FrequencyDelayLine.h>
+#include <zones_convolver/util/Partitioning.h>
 
 class TimeDistributedUPC
 {
