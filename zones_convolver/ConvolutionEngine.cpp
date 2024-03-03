@@ -21,30 +21,44 @@ juce::ThreadPoolJob::JobStatus LoadIRJob::runJob ()
     return jobHasFinished;
 }
 
-void ConvolutionEngine::operator() (
-    ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command)
-{
-    pending_convolver_ = std::move (engine_ready_command.convolver);
-}
-
 ConvolutionEngine::ConvolutionEngine (juce::ThreadPool & thread_pool)
     : thread_pool_ (thread_pool)
     , command_queue_ (*this)
+    , notification_queue_ (*this)
+    , juce::Thread ("convolution_engine_background")
 {
+    startThread ();
+}
+
+ConvolutionEngine::~ConvolutionEngine ()
+{
+    stopThread (10);
+}
+
+void ConvolutionEngine::run ()
+{
+    notification_queue_.Service ();
+    sleep (10);
+}
+
+void ConvolutionEngine::operator() (
+    ConvolutionNotificationQueue::DisposeEngineCommand & dispose_engine_command)
+{
+    dispose_engine_command.convolver.reset ();
+}
+
+void ConvolutionEngine::operator() (
+    ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command)
+{
+    smoothed_value_.setTargetValue (0.f);
+    pending_convolver_ = std::move (engine_ready_command.convolver);
 }
 
 void ConvolutionEngine::prepare (const juce::dsp::ProcessSpec & spec)
 {
+    static constexpr auto kSmoothingTime = 0.6f;
+    smoothed_value_.reset (spec.sampleRate, kSmoothingTime);
     spec_ = spec;
-}
-
-float ConvolutionEngine::SmoothedValue (float value_to_smooth,
-                                        float target,
-                                        float smooth_time_in_seconds) const
-{
-    auto delta = 1.0f / (spec_->sampleRate * smooth_time_in_seconds);
-    auto step = (target - value_to_smooth) * delta;
-    return value_to_smooth + step;
 }
 
 void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float> & replacing)
@@ -55,43 +69,26 @@ void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float>
         convolver_->Process (replacing);
 
     auto output_block = replacing.getOutputBlock ();
-    auto block_size = static_cast<int> (output_block.getNumSamples ());
-    auto num_channels = static_cast<int> (output_block.getNumChannels ());
 
-    auto current_fade_value = 0.0f;
-    auto is_transitioning = pending_convolver_ != nullptr;
-
-    static constexpr float kTransitionThreshold = 0.0001f;
-
-    if (is_transitioning || (1.f - activity_coefficient_) > kTransitionThreshold)
+    if (smoothed_value_.isSmoothing ())
     {
-        for (auto channel_index = 0; channel_index < num_channels; ++channel_index)
+        output_block.multiplyBy (smoothed_value_);
+        if (! smoothed_value_.isSmoothing () && pending_convolver_ != nullptr)
         {
-            current_fade_value = activity_coefficient_;
-
-            auto channel = output_block.getChannelPointer (channel_index);
-            for (auto sample_index = 0; sample_index < block_size; ++sample_index)
-            {
-                current_fade_value =
-                    SmoothedValue (current_fade_value, is_transitioning ? 0.0f : 1.0f);
-                channel [sample_index] *= current_fade_value;
-            }
+            ConvolutionNotificationQueue::Commands notification =
+                ConvolutionNotificationQueue::DisposeEngineCommand {.convolver =
+                                                                        std::move (convolver_)};
+            notification_queue_.PushCommand (notification);
+            convolver_ = std::move (pending_convolver_);
+            pending_convolver_ = nullptr;
+            smoothed_value_.setTargetValue (1.f);
         }
-    }
-
-    activity_coefficient_ = current_fade_value;
-
-    if (is_transitioning && activity_coefficient_ < kTransitionThreshold)
-    {
-        convolver_.reset(); // SCHEDULE REMOVE OLD CONVOLVER : TODO
-        convolver_ = std::move (pending_convolver_);
-
-        pending_convolver_.reset ();
     }
 }
 
 void ConvolutionEngine::reset ()
 {
+    smoothed_value_.setCurrentAndTargetValue (1.f);
     if (convolver_ != nullptr)
         convolver_->Reset ();
 }

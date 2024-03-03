@@ -71,6 +71,22 @@ struct ConvolutionCommandQueue
     using VisitorQueue = ConvolutionVisitorQueue<Commands, Visitor>;
 };
 
+struct ConvolutionNotificationQueue
+{
+    struct DisposeEngineCommand
+    {
+        std::unique_ptr<TimeDistributedNUPC> convolver;
+    };
+
+    using Commands = std::variant<DisposeEngineCommand>;
+    struct Visitor
+    {
+        virtual void operator() (DisposeEngineCommand & dispose_engine_command) = 0;
+    };
+
+    using VisitorQueue = ConvolutionVisitorQueue<Commands, Visitor>;
+};
+
 class LoadIRJob : public juce::ThreadPoolJob
 {
 public:
@@ -89,35 +105,39 @@ private:
 class ConvolutionEngine
     : public juce::dsp::ProcessorBase
     , public ConvolutionCommandQueue::Visitor
+    , public ConvolutionNotificationQueue::Visitor
+    , public juce::Thread
 {
 public:
     struct EngineSpec
     {
     };
 
+    explicit ConvolutionEngine (juce::ThreadPool & thread_pool);
+    ~ConvolutionEngine () override;
+
+    void run () override;
+    void operator() (
+        ConvolutionNotificationQueue::DisposeEngineCommand & dispose_engine_command) override;
+
+    void LoadIR (juce::dsp::AudioBlock<const float> ir_block);
     void operator() (ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command) override;
 
-    explicit ConvolutionEngine (juce::ThreadPool & thread_pool);
-    ~ConvolutionEngine () override = default;
     void prepare (const juce::dsp::ProcessSpec & spec) override;
     void process (const juce::dsp::ProcessContextReplacing<float> & replacing) override;
     void reset () override;
-
     void ConfigureEngine (const EngineSpec & engine_spec);
-    void LoadIR (juce::dsp::AudioBlock<const float> ir_block);
 
 private:
-    float
-    SmoothedValue (float value_to_smooth, float target, float smooth_time_in_seconds = 0.2f) const;
-
     std::unique_ptr<TimeDistributedNUPC> convolver_;
     std::unique_ptr<TimeDistributedNUPC> pending_convolver_;
 
-    float activity_coefficient_ = 0.f;
+    juce::LinearSmoothedValue<float> smoothed_value_;
 
     std::optional<juce::dsp::ProcessSpec> spec_ = std::nullopt;
     juce::ThreadPool & thread_pool_;
     ConvolutionCommandQueue::VisitorQueue command_queue_;
+    ConvolutionNotificationQueue::VisitorQueue notification_queue_;
     EngineSpec engine_spec_;
     juce::AudioBuffer<float> ir_buffer_;
 };
