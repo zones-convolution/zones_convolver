@@ -22,10 +22,10 @@ juce::ThreadPoolJob::JobStatus LoadIRJob::runJob ()
 }
 
 ConvolutionEngine::ConvolutionEngine (juce::ThreadPool & thread_pool)
-    : thread_pool_ (thread_pool)
+    : juce::Thread ("convolution_engine_background")
+    , thread_pool_ (thread_pool)
     , command_queue_ (*this)
     , notification_queue_ (*this)
-    , juce::Thread ("convolution_engine_background")
 {
     startThread ();
 }
@@ -37,8 +37,11 @@ ConvolutionEngine::~ConvolutionEngine ()
 
 void ConvolutionEngine::run ()
 {
-    notification_queue_.Service ();
-    sleep (10);
+    while (! threadShouldExit ())
+    {
+        notification_queue_.Service ();
+        sleep (10);
+    }
 }
 
 void ConvolutionEngine::operator() (
@@ -75,6 +78,7 @@ void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float>
     if (smoothed_value_.isSmoothing ())
     {
         output_block.multiplyBy (smoothed_value_);
+
         if (! smoothed_value_.isSmoothing () && pending_convolver_ != nullptr)
         {
             ConvolutionNotificationQueue::Commands notification =
