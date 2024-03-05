@@ -59,6 +59,8 @@ void ConvolutionEngine::prepare (const juce::dsp::ProcessSpec & spec)
     static constexpr auto kSmoothingTime = 0.6f;
     smoothed_value_.reset (spec.sampleRate, kSmoothingTime);
     spec_ = spec;
+
+    reset ();
 }
 
 void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float> & replacing)
