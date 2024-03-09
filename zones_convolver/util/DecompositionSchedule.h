@@ -12,7 +12,7 @@ public:
     };
 
     explicit StageBuffers (int num_points);
-    [[nodiscard]] ComplexBuffer * GetStage (int stage);
+    [[nodiscard]] ComplexBuffer * GetStage (StageBuffer stage);
     void PromoteStages ();
     void Clear ();
 
