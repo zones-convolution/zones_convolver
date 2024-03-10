@@ -13,7 +13,7 @@ FrequencyDelayLine::FrequencyDelayLine (std::size_t num_channels,
     }
 }
 
-static inline std::size_t ReverseWrap (int a, int b)
+static std::size_t ReverseWrap (int a, int b)
 {
     return static_cast<std::size_t> ((b + (a % b)) % b);
 }

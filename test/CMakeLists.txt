@@ -3,13 +3,11 @@ target_sources(unit_tests PRIVATE
         SplitBlockTests.cpp
         ComplexBufferTests.cpp
         FFTDecompositionTests.cpp
-        DecompositionScheduleTests.cpp
         FFTTests.cpp
-        LambdaPtrConverter.h
         TestUtils.h
         TestUtils.cpp
         DecompositionTestBed.cpp
-        )
+)
 
 target_link_libraries(unit_tests PRIVATE
         zones_convolver
@@ -19,13 +17,13 @@ target_link_libraries(unit_tests PRIVATE
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
-        )
+)
 
 target_compile_definitions(unit_tests
         PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_VST3_CAN_REPLACE_VST2=0
-        )
+)
 
 target_compile_options(unit_tests
         INTERFACE
@@ -33,7 +31,7 @@ target_compile_options(unit_tests
         -Wextra
         -Werror
         -Wpedantic
-        )
+)
 
 include(Catch)
 catch_discover_tests(unit_tests)
