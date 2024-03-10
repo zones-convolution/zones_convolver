@@ -3,7 +3,6 @@
 #include "util/CircularBuffer.h"
 #include "util/ComplexBuffer.h"
 #include "util/FrequencyDelayLine.h"
-#include "util/Partitioning.h"
 
 #include <juce_dsp/juce_dsp.h>
 

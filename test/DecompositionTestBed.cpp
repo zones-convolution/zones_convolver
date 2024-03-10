@@ -1,7 +1,7 @@
 #include "TestUtils.h"
+#include "zones_convolver/UniformPartitionedConvolver.h"
 #include "zones_convolver/util/DecompositionSchedule.h"
 #include "zones_convolver/util/FFT.h"
-#include "zones_convolver/util/TimeDomainConvolver.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
@@ -254,15 +254,13 @@ TEST_CASE ("decomposing a 16b partition with conv")
     ForwardFFTUnordered (transformed_ir.GetWritePointer (0), kFFTSize);
     auto transformed_ir_ptr = transformed_ir.GetWritePointer (0);
 
-    TimeDomainConvolver time_domain_convolver;
     juce::dsp::ProcessSpec spec {44100, kInputSize, 1};
-    time_domain_convolver.prepare (spec);
-    time_domain_convolver.LoadImpulseResponse (ir_buffer, 44100);
+    UniformPartitionedConvolver uniform_partitioned_convolver {spec, ir_buffer};
 
-    auto time_domain_convolution_buffer = CreateInputBuffer (kInputSize);
-    juce::dsp::AudioBlock<float> time_domain_convolution_block {time_domain_convolution_buffer};
-    juce::dsp::ProcessContextReplacing<float> context {time_domain_convolution_block};
-    time_domain_convolver.process (context);
+    auto convolution_buffer = CreateInputBuffer (kInputSize);
+    juce::dsp::AudioBlock<float> convolution_block {convolution_buffer};
+    juce::dsp::ProcessContextReplacing<float> context {convolution_block};
+    uniform_partitioned_convolver.Process (context);
 
     auto num_decompositions = static_cast<int> (std::log2 (kNumBlocks / 2));
 
@@ -315,7 +313,10 @@ TEST_CASE ("decomposing a 16b partition with conv")
                     auto stage_c_ptr = stage_c->GetWritePointer (0);
                     auto starting_index = phase * kBlockSize;
 
-                    auto tolerance = juce::Tolerance<float> ().withRelative (1.f);
+                    // This tolerance appears very high, however, this should be expected as the
+                    // buffer size is quite substantial and is convolved in a single block.
+                    // The range of values in the buffer is also very large.
+                    auto tolerance = juce::Tolerance<float> ().withAbsolute (0.2f);
 
                     // TEST CONV RESULT
                     for (auto sample_index = starting_index;
@@ -323,10 +324,9 @@ TEST_CASE ("decomposing a 16b partition with conv")
                          ++sample_index)
                     {
                         auto stage_c_sample = stage_c_ptr [sample_index].real ();
-                        auto time_domain_convolver_sample =
-                            time_domain_convolution_block.getSample (0, sample_index);
-                        REQUIRE (juce::approximatelyEqual (
-                            stage_c_sample, time_domain_convolver_sample, tolerance));
+                        auto convolver_sample = convolution_block.getSample (0, sample_index);
+                        REQUIRE (
+                            juce::approximatelyEqual (stage_c_sample, convolver_sample, tolerance));
                     }
                     break;
             }
