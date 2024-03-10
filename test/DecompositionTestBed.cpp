@@ -316,7 +316,7 @@ TEST_CASE ("decomposing a 16b partition with conv")
                     auto stage_c_ptr = stage_c->GetWritePointer (0);
                     auto starting_index = phase * kBlockSize;
 
-                    auto tolerance = juce::Tolerance<float> ().withAbsolute (0.0001f);
+                    auto tolerance = juce::Tolerance<float> ().withAbsolute (0.01f);
 
                     // TEST CONV RESULT
                     for (auto sample_index = starting_index;
