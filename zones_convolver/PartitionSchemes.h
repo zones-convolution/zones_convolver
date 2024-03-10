@@ -2,6 +2,8 @@
 
 #include "util/Partitioning.h"
 
+namespace zones
+{
 extern const PartitioningResults kGarciaResults16;
 extern const PartitioningResults kGarciaResults32;
 extern const PartitioningResults kGarciaResults64;
@@ -23,3 +25,4 @@ static const GarciaResults kGarciaResults {
     {2048, &kGarciaResults2048},
     {4096, &kGarciaResults4096},
 };
+}

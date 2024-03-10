@@ -2,6 +2,8 @@
 #include <melatonin_test_helpers/melatonin_test_helpers.h>
 #include <zones_convolver/util/ComplexBuffer.h>
 
+using namespace zones;
+
 SCENARIO ("can construct complex buffers with different channel and point sizes", "[ComplexBuffer]")
 {
     GIVEN ("a list of different configurations")

@@ -1,5 +1,7 @@
 #include "UniformPartitionedConvolver.h"
 
+namespace zones
+{
 UniformPartitionedConvolver::UniformPartitionedConvolver (
     const juce::dsp::ProcessSpec & spec,
     juce::dsp::AudioBlock<const float> ir_segment)
@@ -128,4 +130,5 @@ void UniformPartitionedConvolver::Reset ()
     frequency_delay_line_->Clear ();
     fdl_convolved_output_->Clear ();
     ifft_buffer_->Clear ();
+}
 }

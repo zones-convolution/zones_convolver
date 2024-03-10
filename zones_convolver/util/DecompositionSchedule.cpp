@@ -2,6 +2,8 @@
 
 #include "FFTDecomposition.h"
 
+namespace zones
+{
 StageBuffers::StageBuffers (int num_points)
 {
     for (auto stage_index = 0; stage_index < kNumStages; ++stage_index)
@@ -71,4 +73,5 @@ void DecompositionSchedule::InverseDecompositionSchedule (int num_decompositions
             FFTDecomposition::SegmentedInverseDecompositionRadix2 (
                 data, fft_size, num_segments, num_steps, phase);
     }
+}
 }

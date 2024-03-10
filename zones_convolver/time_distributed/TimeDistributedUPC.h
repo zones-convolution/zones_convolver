@@ -6,6 +6,8 @@
 #include <zones_convolver/util/FrequencyDelayLine.h>
 #include <zones_convolver/util/Partitioning.h>
 
+namespace zones
+{
 class TimeDistributedUPC
 {
 public:
@@ -34,3 +36,4 @@ private:
     std::unique_ptr<StageBuffers> stage_buffers_;
     juce::AudioBuffer<float> previous_tail_;
 };
+}

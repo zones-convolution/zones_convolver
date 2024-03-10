@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace zones
+{
 struct PartitionLayout
 {
     int partition_size_blocks;
@@ -31,3 +33,4 @@ static int GetNumPartitionsRequiredForSegment (int partition_size, int segment_s
 
 static std::vector<PartitionLayout>
 GetPartitionScheme (const GarciaResults & garcia_results, int block_size, int ir_num_samples);
+}

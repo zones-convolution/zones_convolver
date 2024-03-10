@@ -2,6 +2,8 @@
 
 #include <zones_convolver/util/FFT.h>
 
+namespace zones
+{
 TimeDistributedUPC::TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
                                         int partition_size_blocks,
                                         const std::vector<ComplexBuffer> & filter_partitions,
@@ -120,4 +122,5 @@ void TimeDistributedUPC::Reset ()
     frequency_delay_line_->Clear ();
     previous_tail_.clear ();
     stage_buffers_->Clear ();
+}
 }

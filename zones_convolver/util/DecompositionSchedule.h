@@ -1,6 +1,8 @@
 #pragma once
 #include "ComplexBuffer.h"
 
+namespace zones
+{
 class StageBuffers
 {
 public:
@@ -34,4 +36,5 @@ void InverseDecompositionSchedule (int num_decompositions,
                                    int num_blocks,
                                    std::complex<float> * data,
                                    int phase);
+}
 }

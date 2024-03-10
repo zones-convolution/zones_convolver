@@ -4,6 +4,8 @@
 
 #include <juce_dsp/juce_dsp.h>
 
+namespace zones
+{
 class CircularBuffer
 {
 public:
@@ -15,3 +17,4 @@ private:
     std::size_t head_position_ = 0;
     juce::AudioBuffer<float> & buffer_;
 };
+}

@@ -7,6 +7,8 @@
 #include <zones_convolver/UniformPartitionedConvolver.h>
 #include <zones_convolver/util/Partitioning.h>
 
+namespace zones
+{
 class TimeDistributedNUPC
 {
 public:
@@ -30,3 +32,4 @@ private:
     juce::AudioBuffer<float> sub_convolver_delay_buffer_;
     CircularBuffer result_buffer_ {sub_convolver_delay_buffer_};
 };
+}

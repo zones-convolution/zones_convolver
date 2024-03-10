@@ -6,6 +6,8 @@
 
 #include <juce_dsp/juce_dsp.h>
 
+namespace zones
+{
 class UniformPartitionedConvolver
 {
 public:
@@ -28,3 +30,4 @@ private:
     juce::AudioBuffer<float> saved_inputs_;
     CircularBuffer circular_buffer_ {saved_inputs_};
 };
+}

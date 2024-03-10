@@ -4,6 +4,8 @@
 
 #include <juce_dsp/juce_dsp.h>
 
+namespace zones
+{
 class FrequencyDelayLine
 {
 public:
@@ -21,3 +23,4 @@ private:
     std::size_t head_position_ = 0;
     std::size_t num_blocks_;
 };
+}

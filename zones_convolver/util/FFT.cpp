@@ -1,5 +1,7 @@
 #include "FFT.h"
 
+namespace zones
+{
 void ForwardFFTUnordered (std::complex<float> * data, std::size_t num_points)
 {
     for (auto depth = static_cast<int> (std::log2 (num_points)); depth > 0; --depth)
@@ -56,4 +58,5 @@ void InverseFFTUnordered (std::complex<float> * data, std::size_t num_points)
             }
         }
     }
+}
 }

@@ -1,5 +1,7 @@
 #include "TimeDistributedNUPC.h"
 
+namespace zones
+{
 TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_block,
                                           const juce::dsp::ProcessSpec & spec)
 {
@@ -106,4 +108,5 @@ void TimeDistributedNUPC::Reset ()
     upc_->Reset ();
     for (auto tdupc : tdupcs_)
         tdupc->Reset ();
+}
 }

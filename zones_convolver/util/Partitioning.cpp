@@ -1,5 +1,7 @@
 #include "Partitioning.h"
 
+namespace zones
+{
 static PartitionScheme FindNearestPartitionScheme (const PartitioningResults * results,
                                                    int ir_num_samples)
 {
@@ -80,4 +82,5 @@ GetPartitionScheme (const GarciaResults & garcia_results, int block_size, int ir
         ReduceSchemeToFitIR (nearest_scheme, sample_difference, block_size);
 
     return nearest_scheme.layout;
+}
 }

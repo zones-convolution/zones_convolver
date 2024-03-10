@@ -5,11 +5,13 @@
 #include <zones_convolver/util/ComplexBuffer.h>
 #include <zones_convolver/util/FFT.h>
 
+using namespace zones;
+
 TEST_CASE ("completes forward FFT", "[ForwardFFTUnordered]")
 {
     for (auto num_points : {2u, 4u, 8u, 32u, 64u, 1024u})
     {
-        ComplexBuffer input {num_points, 2};
+        zones::ComplexBuffer input {num_points, 2};
         input.Clear ();
 
         auto zones_fft_channel = input.GetWritePointer (0);

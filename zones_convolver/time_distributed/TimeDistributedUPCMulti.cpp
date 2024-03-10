@@ -1,5 +1,7 @@
 #include "TimeDistributedUPCMulti.h"
 
+namespace zones
+{
 static int LargestPowerOf2In (int n)
 {
     if (n <= 0)
@@ -91,4 +93,5 @@ void TimeDistributedUPCMulti::Reset ()
 {
     for (auto & tdupc : tdupcs_)
         tdupc.Reset ();
+}
 }

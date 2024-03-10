@@ -1,5 +1,7 @@
 #include "SplitBlock.h"
 
+namespace zones
+{
 SplitBlock::SplitBlock (juce::dsp::AudioBlock<float> first_block,
                         juce::dsp::AudioBlock<float> wrapped_block)
     : first_block_ (first_block)
@@ -71,4 +73,5 @@ SplitBlock SplitBlock::GetSubBlock (std::size_t num_samples)
                                       : juce::dsp::AudioBlock<float> (),
             wrapped_samples_to_take > 0 ? wrapped_block_.getSubBlock (0, wrapped_samples_to_take)
                                         : juce::dsp::AudioBlock<float> ()};
+}
 }

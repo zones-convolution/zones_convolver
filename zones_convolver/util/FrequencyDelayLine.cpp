@@ -1,5 +1,7 @@
 #include "FrequencyDelayLine.h"
 
+namespace zones
+{
 FrequencyDelayLine::FrequencyDelayLine (std::size_t num_channels,
                                         std::size_t num_blocks,
                                         std::size_t num_points_per_block)
@@ -34,4 +36,5 @@ void FrequencyDelayLine::Clear ()
 {
     for (auto & buffer : delay_line_)
         buffer.Clear ();
+}
 }

@@ -1,5 +1,7 @@
 #include "ComplexBuffer.h"
 
+namespace zones
+{
 ComplexBuffer::ComplexBuffer (std::size_t num_points, std::size_t num_channels)
     : num_channels_ (num_channels)
     , num_points_ (num_points)
@@ -96,4 +98,5 @@ juce::dsp::AudioBlock<const float> ComplexBuffer::GetContinuousBlock () const
 {
     auto write_pointers = reinterpret_cast<const float * const *> (GetArrayOfReadPointer ());
     return {write_pointers, num_channels_, 2 * num_points_};
+}
 }

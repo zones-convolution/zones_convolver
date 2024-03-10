@@ -4,10 +4,11 @@
 
 #include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
-#include <juce_events/juce_events.h>
 #include <optional>
 #include <variant>
 
+namespace zones
+{
 template <typename Commands, typename Visitor>
 class ConvolutionVisitorQueue
 {
@@ -142,3 +143,4 @@ private:
     EngineSpec engine_spec_;
     juce::AudioBuffer<float> ir_buffer_;
 };
+}

@@ -1,6 +1,8 @@
 #pragma once
 #include <juce_dsp/juce_dsp.h>
 
+namespace zones
+{
 class ComplexBuffer
 {
 public:
@@ -29,3 +31,4 @@ private:
     std::vector<std::complex<float>> channel_data_;
     std::vector<std::complex<float> *> channel_pointers_;
 };
+}

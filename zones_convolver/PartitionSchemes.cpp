@@ -1,5 +1,7 @@
 #include "PartitionSchemes.h"
 
+namespace zones
+{
 const std::vector<PartitionScheme> kGarciaResults16 {
     PartitionScheme {.ir_size_samples = 32,
                      .layout =
@@ -692,3 +694,4 @@ const std::vector<PartitionScheme> kGarciaResults4096 {
                              PartitionLayout {.partition_size_blocks = 64, .num_partitions = 30},
                          }},
 };
+}

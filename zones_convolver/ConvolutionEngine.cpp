@@ -1,5 +1,7 @@
 #include "ConvolutionEngine.h"
 
+namespace zones
+{
 LoadIRJob::LoadIRJob (juce::dsp::AudioBlock<const float> ir_block,
                       const juce::dsp::ProcessSpec & spec,
                       ConvolutionCommandQueue::VisitorQueue & command_queue)
@@ -107,4 +109,5 @@ void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block)
 {
     if (spec_ != std::nullopt)
         thread_pool_.addJob (new LoadIRJob (ir_block, *spec_, command_queue_), true);
+}
 }

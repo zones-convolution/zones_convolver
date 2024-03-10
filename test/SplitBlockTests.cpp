@@ -2,6 +2,8 @@
 #include <melatonin_test_helpers/melatonin_test_helpers.h>
 #include <zones_convolver/util/SplitBlock.h>
 
+using namespace zones;
+
 SCENARIO ("split blocks can be cleared", "[SplitBlock]")
 {
     SECTION ("can clear an empty block")

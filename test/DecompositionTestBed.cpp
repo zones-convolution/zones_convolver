@@ -6,6 +6,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
 
+using namespace zones;
+
 static constexpr auto kBlockSize = 128;
 static constexpr auto kNumBlocks = 64;
 

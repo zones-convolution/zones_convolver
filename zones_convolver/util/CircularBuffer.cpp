@@ -1,5 +1,7 @@
 #include "CircularBuffer.h"
 
+namespace zones
+{
 CircularBuffer::CircularBuffer (juce::AudioBuffer<float> & buffer)
     : buffer_ (buffer)
 {
@@ -35,4 +37,5 @@ SplitBlock CircularBuffer::GetNext (std::size_t delay, bool advance)
                 : juce::dsp::AudioBlock<float> (),
             wrapped_samples_to_take > 0 ? block.getSubBlock (0, wrapped_samples_to_take)
                                         : juce::dsp::AudioBlock<float> ()};
+}
 }

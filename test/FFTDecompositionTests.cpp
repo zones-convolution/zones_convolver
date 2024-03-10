@@ -6,6 +6,8 @@
 #include <zones_convolver/util/FFT.h>
 #include <zones_convolver/util/FFTDecomposition.h>
 
+using namespace zones;
+
 TEST_CASE ("changing step size does not affect segmented forward decomposition output",
            "[SegmentedForwardDecompositionRadix2]")
 {

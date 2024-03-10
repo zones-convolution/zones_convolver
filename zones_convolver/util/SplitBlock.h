@@ -2,6 +2,8 @@
 
 #include <juce_dsp/juce_dsp.h>
 
+namespace zones
+{
 class SplitBlock
 {
 public:
@@ -23,3 +25,4 @@ private:
 
     std::size_t total_num_samples_ = 0;
 };
+}
