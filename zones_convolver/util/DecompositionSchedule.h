@@ -24,7 +24,7 @@ private:
     std::vector<ComplexBuffer> stages_;
 };
 
-namespace DecompositionSchedule
+namespace decomposition_schedule
 {
 void ForwardDecompositionSchedule (int num_decompositions,
                                    int fft_size,

@@ -50,7 +50,7 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
         stage_a [(phase_ * block_size) + sample_index] =
             std::complex<float> {output_block.getSample (0, sample_index), 0.f};
 
-    DecompositionSchedule::ForwardDecompositionSchedule (
+    decomposition_schedule::ForwardDecompositionSchedule (
         num_decompositions_, fft_num_points_, num_phases_, stage_a, phase_);
 
     auto stage_b = stage_buffers_->GetStage (StageBuffers::StageBuffer::kB)->GetWritePointer (0);
@@ -99,7 +99,7 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
     }
 
     auto stage_c = stage_buffers_->GetStage (StageBuffers::StageBuffer::kC)->GetWritePointer (0);
-    DecompositionSchedule::InverseDecompositionSchedule (
+    decomposition_schedule::InverseDecompositionSchedule (
         num_decompositions_, fft_num_points_, num_phases_, stage_c, phase_);
 
     auto stage_position = phase_ * block_size;

@@ -30,7 +30,7 @@ TEST_CASE ("changing step size does not affect segmented forward decomposition o
             auto step_size = static_cast<std::size_t> (std::pow (2, step_size_index));
             auto num_steps = num_points / (2 * step_size);
             for (auto step = 0u; step < num_steps; ++step)
-                FFTDecomposition::SegmentedForwardDecompositionRadix2 (
+                fft_decomposition::SegmentedForwardDecompositionRadix2 (
                     inputs.GetWritePointer (step_size_index), num_points, 1, num_steps, step);
         }
 
@@ -65,7 +65,7 @@ TEST_CASE ("completes segmented decomposed FFT", "[SegmentedForwardDecomposition
         {
             auto num_sub_decompositions =
                 static_cast<std::size_t> (std::pow (2, decomposition_layer));
-            FFTDecomposition::SegmentedForwardDecompositionRadix2 (
+            fft_decomposition::SegmentedForwardDecompositionRadix2 (
                 decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
         }
 
@@ -105,7 +105,7 @@ TEST_CASE ("segmented decomposed FFT followed by unordered FFT",
         {
             auto num_sub_decompositions =
                 static_cast<std::size_t> (std::pow (2, decomposition_layer));
-            FFTDecomposition::SegmentedForwardDecompositionRadix2 (
+            fft_decomposition::SegmentedForwardDecompositionRadix2 (
                 decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
         }
 
@@ -152,7 +152,7 @@ TEST_CASE ("changing step size does not affect segmented inverse decomposition o
             auto step_size = static_cast<std::size_t> (std::pow (2, step_size_index));
             auto num_steps = num_points / (2 * step_size);
             for (auto step = 0u; step < num_steps; ++step)
-                FFTDecomposition::SegmentedInverseDecompositionRadix2 (
+                fft_decomposition::SegmentedInverseDecompositionRadix2 (
                     inputs.GetWritePointer (step_size_index), num_points, 1, num_steps, step);
         }
 
@@ -193,7 +193,7 @@ TEST_CASE ("completes segmented inverse decomposed FFT", "[SegmentedInverseDecom
         {
             auto num_sub_decompositions =
                 static_cast<std::size_t> (std::pow (2, decomposition_layer - 1));
-            FFTDecomposition::SegmentedInverseDecompositionRadix2 (
+            fft_decomposition::SegmentedInverseDecompositionRadix2 (
                 decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
         }
 
@@ -243,7 +243,7 @@ TEST_CASE ("completes segmented inverse followed by unordered iFFT",
         {
             auto num_sub_decompositions =
                 static_cast<std::size_t> (std::pow (2, decomposition_layer - 1));
-            FFTDecomposition::SegmentedInverseDecompositionRadix2 (
+            fft_decomposition::SegmentedInverseDecompositionRadix2 (
                 decomposed_fft_channel, num_points, num_sub_decompositions, 1, 0);
         }
 

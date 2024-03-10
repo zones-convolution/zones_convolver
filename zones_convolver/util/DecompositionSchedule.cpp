@@ -38,7 +38,7 @@ void StageBuffers::Clear ()
         stage.Clear ();
 }
 
-void DecompositionSchedule::ForwardDecompositionSchedule (int num_decompositions,
+void decomposition_schedule::ForwardDecompositionSchedule (int num_decompositions,
                                                           int fft_size,
                                                           int num_blocks,
                                                           std::complex<float> * data,
@@ -52,13 +52,13 @@ void DecompositionSchedule::ForwardDecompositionSchedule (int num_decompositions
         if (phase >= num_blocks - num_steps)
         {
             auto relative_phase = phase % num_steps;
-            FFTDecomposition::SegmentedForwardDecompositionRadix2 (
+            fft_decomposition::SegmentedForwardDecompositionRadix2 (
                 data, fft_size, num_segments, num_steps, relative_phase);
         }
     }
 }
 
-void DecompositionSchedule::InverseDecompositionSchedule (int num_decompositions,
+void decomposition_schedule::InverseDecompositionSchedule (int num_decompositions,
                                                           int fft_size,
                                                           int num_blocks,
                                                           std::complex<float> * data,
@@ -70,7 +70,7 @@ void DecompositionSchedule::InverseDecompositionSchedule (int num_decompositions
         auto num_segments = static_cast<int> (std::pow (2, decomposition_level));
         auto num_steps = num_blocks / num_segments;
         if (phase < num_steps)
-            FFTDecomposition::SegmentedInverseDecompositionRadix2 (
+            fft_decomposition::SegmentedInverseDecompositionRadix2 (
                 data, fft_size, num_segments, num_steps, phase);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace zones
 {
-void FFTDecomposition::SegmentedForwardDecompositionRadix2 (std::complex<float> * data,
+void fft_decomposition::SegmentedForwardDecompositionRadix2 (std::complex<float> * data,
                                                             std::size_t num_points,
                                                             std::size_t num_segments,
                                                             std::size_t num_steps,
@@ -36,7 +36,7 @@ void FFTDecomposition::SegmentedForwardDecompositionRadix2 (std::complex<float> 
     }
 }
 
-void FFTDecomposition::SegmentedInverseDecompositionRadix2 (std::complex<float> * data,
+void fft_decomposition::SegmentedInverseDecompositionRadix2 (std::complex<float> * data,
                                                             std::size_t num_points,
                                                             std::size_t num_segments,
                                                             std::size_t num_steps,
