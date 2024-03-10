@@ -15,9 +15,10 @@ static constexpr auto kFFTSize = kInputSize * 2;
 juce::AudioBuffer<float> CreateInputBuffer (int input_size)
 {
     juce::AudioBuffer<float> input_buffer {1, input_size};
+    auto normalisation = 2.f / static_cast<float> (input_size);
     for (auto sample_index = 0; sample_index < kInputSize; ++sample_index)
-
-        input_buffer.setSample (0, sample_index, static_cast<float> (sample_index));
+        input_buffer.setSample (
+            0, sample_index, (static_cast<float> (sample_index) * normalisation) - 1.f);
 
     return input_buffer;
 }
@@ -313,10 +314,7 @@ TEST_CASE ("decomposing a 16b partition with conv")
                     auto stage_c_ptr = stage_c->GetWritePointer (0);
                     auto starting_index = phase * kBlockSize;
 
-                    // This tolerance appears very high, however, this should be expected as the
-                    // buffer size is quite substantial and is convolved in a single block.
-                    // The range of values in the buffer is also very large.
-                    auto tolerance = juce::Tolerance<float> ().withAbsolute (0.2f);
+                    auto tolerance = juce::Tolerance<float> ().withAbsolute (0.0001f);
 
                     // TEST CONV RESULT
                     for (auto sample_index = starting_index;
