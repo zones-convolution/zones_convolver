@@ -21,18 +21,71 @@
 
   <p align="center">
 
+## !! Please note: This library has not seen production use. We **DO NOT RECOMMEND** using this yet. !!
+
 Convolution library used in the upcoming Zones Convolution plugin. Implements a non-uniform partitioned convolution (
 NUPC) scheme with modified Garcia optimal partitioning and time distributed transforms. This is able to run on a single
 thread without large spikes in load for variable block sizes without additional latency.
 
-Currently, the library is in a first draft state and has not yet seen real use, therefore it **should be
-used with caution**.
+Currently, the library is in a first draft state and has not yet seen real use. We plan on improving the stability along
+with user testing. We expect breaking changes will be introduced as the library evolves.
+
 <br />
 <a href="https://github.com/zones-convolution/zones_convolver/issues">Report Bug / Request Feature</a>
 </p>
 </div>
 
 # Usage
+
+Zones Convolver provides an interface that is able to load IRs offline and then smoothly fade them in/out in a (
+hopefully) thread-safe manner. Impulse responses should be loaded only from a thread where a short wait (used to copy
+the IR) is acceptable. In the case of the Zones Convolver plugin we have a background thread that loads IRs. This is
+required as the convolution engine must allocate space for and copy the IR.
+
+## Convolution Engine
+
+The ```ConvolutionEngine``` class inherits from ```juce::dsp::ProcessorBase``` exposing the ```prepare```, ```reset```
+and ```process``` methods. These should be called in their appropriate places. IRs can be loaded through
+the ```LoadIR``` method that expects a ```juce::dsp::AudioBlock``` that will be copied.
+
+### Minimal Example
+
+```cpp
+#include <zones_convolver/zones_convolver.h>
+
+class MyPluginProcessor : juce::dsp::ProcessorBase
+{
+private:
+    juce::ThreadPool thread_pool_;
+    zones::ConvolutionEngine convolver_ {thread_pool_};
+
+public:
+    ~MyPluginProcessor () override = default;
+    MyPluginProcessor (juce::dsp::AudioBlock<const float> ir_to_load)
+    {
+        convolver_.LoadIR (ir_to_load);
+    }
+
+    void prepare (const juce::dsp::ProcessSpec & spec) override
+    {
+        convolver_.prepare (spec);
+    }
+
+    void process (const juce::dsp::ProcessContextReplacing<float> & replacing) override
+    {
+        convolver_.process (replacing);
+    }
+
+    void reset () override
+    {
+        convolver_.reset ();
+    }
+};
+```
+
+Though we suggest using the ```ConvolutionEngine``` class, it is also possible to directly use
+the ```UniformPartitionedConvolver```
+and ```TimeDistributedNUPC``` without mechanisms for loading IRs safely across threads.
 
 # Installation
 
@@ -53,7 +106,7 @@ add_subdirectory(path/to/zones_convolver)
 target_link_libraries(juce_project
         PRIVATE
         zones_convolver
-)
+        )
 ```
 
 ## Projucer
@@ -344,22 +397,22 @@ partitioning results.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-[contributors-shield]: https://img.shields.io/github/contributors/github_username/repo_name.svg?style=for-the-badge
+[contributors-shield]: https://img.shields.io/github/contributors/zones-convolution/zones_convolver.svg?style=for-the-badge
 
 [contributors-url]: https://github.com/zones-convolution/zones_convolver/graphs/contributors
 
-[forks-shield]: https://img.shields.io/github/forks/github_username/repo_name.svg?style=for-the-badge
+[forks-shield]: https://img.shields.io/github/forks/zones-convolution/zones_convolver.svg?style=for-the-badge
 
 [forks-url]: https://github.com/zones-convolution/zones_convolver/network/members
 
-[stars-shield]: https://img.shields.io/github/stars/github_username/repo_name.svg?style=for-the-badge
+[stars-shield]: https://img.shields.io/github/stars/zones-convolution/zones_convolver.svg?style=for-the-badge
 
 [stars-url]: https://github.com/zones-convolution/zones_convolver/stargazers
 
-[issues-shield]: https://img.shields.io/github/issues/github_username/repo_name.svg?style=for-the-badge
+[issues-shield]: https://img.shields.io/github/issues/zones-convolution/zones_convolver.svg?style=for-the-badge
 
 [issues-url]: https://github.com/zones-convolution/zones_convolver/issues
 
-[license-shield]: https://img.shields.io/github/license/github_username/repo_name.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/zones-convolution/zones_convolver.svg?style=for-the-badge
 
 [license-url]: https://github.com/zones-convolution/zones_convolver/blob/main/LICENSE
