@@ -3,7 +3,7 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-![Tests](https://img.shields.io/github/actions/workflow/status/zones-convolution/zones_convolver/zones_convolver_tests?style=for-the-badge&logo=github&label=TESTS)
+![Tests](https://img.shields.io/github/actions/workflow/status/zones-convolution/zones_convolver/zones_convolver_tests.yml?style=for-the-badge&logo=github&label=TESTS)
 
 ![CMake](https://img.shields.io/badge/CMake-%23008FBA.svg?style=for-the-badge&logo=cmake&logoColor=white)
 ![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)
@@ -133,8 +133,6 @@ Currently on our roadmap,
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 # Contact
 
 Feel free to get in touch,
@@ -142,8 +140,6 @@ Feel free to get in touch,
 **Leon Paterson-Stephens** - leon@leonps.com
 
 **Micah Strange** - micahstrange16@gmail.com
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 # Library Introduction
 
@@ -383,6 +379,8 @@ partitioning results.
 
 # Acknowledgments / References
 
+<!--- // @formatter:off --->
+
 * **Frank Wefers** - Partitioned convolution algorithms for real-time auralization
 * **Jeffrey R. Hurchalla** - A Time Distributed FFT for Efficient Low Latency Convolution
 * **Eric Battenberg, Rimas Avizienis** - IMPLEMENTING REAL-TIME PARTITIONED CONVOLUTION ALGORITHMS ON CONVENTIONAL
@@ -390,12 +388,10 @@ partitioning results.
 * **Guillermo García** - Optimal Filter Partition for Efficient Convolution with Short Input/Output Delay
 * **Graham Barab** - [RTCONVOLVE](https://github.com/grahman/RTConvolve)
 * **JUCE** - [juce::dsp::Convolution](https://docs.juce.com/master/classdsp_1_1Convolution.html)
-* **Jan Wilczek
-  ** - [Fast Convolution: FFT-based, Overlap-Add, Overlap-Save, Partitioned](https://thewolfsound.com/fast-convolution-fft-based-overlap-add-overlap-save-partitioned/#the-convolution-series)
-
+* **Jan Wilczek** - [Fast Convolution: FFT-based, Overlap-Add, Overlap-Save, Partitioned](https://thewolfsound.com/fast-convolution-fft-based-overlap-add-overlap-save-partitioned/#the-convolution-series)
 * [Readme Boilerplate](https://github.com/othneildrew/Best-README-Template)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<!--- // @formatter:on --->
 
 [contributors-shield]: https://img.shields.io/github/contributors/zones-convolution/zones_convolver.svg?style=for-the-badge
 
