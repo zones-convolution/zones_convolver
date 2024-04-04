@@ -66,6 +66,7 @@ void TimeDistributedNUPC::Process (const juce::dsp::ProcessContextReplacing<floa
 
         if (num_tdupc > 0)
         {
+            saved_input_block.getSubBlock (num_samples_collected_).copyFrom (sub_output_replacing);
             if (num_samples_collected_ == 0)
             {
                 for (auto tdupc_index = 0; tdupc_index < num_tdupc; ++tdupc_index)
@@ -79,8 +80,6 @@ void TimeDistributedNUPC::Process (const juce::dsp::ProcessContextReplacing<floa
                 }
                 result_buffer_.GetNext (max_block_size_, true);
             }
-
-            saved_input_block.getSubBlock (num_samples_collected_).copyFrom (sub_output_replacing);
         }
 
         upc_->Process (sub_output_replacing);
