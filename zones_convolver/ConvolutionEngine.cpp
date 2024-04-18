@@ -4,9 +4,11 @@ namespace zones
 {
 LoadIRJob::LoadIRJob (juce::dsp::AudioBlock<const float> ir_block,
                       const juce::dsp::ProcessSpec & spec,
+                      const Convolver::ConvolverSpec & convolver_spec,
                       ConvolutionCommandQueue::VisitorQueue & command_queue)
     : ThreadPoolJob ("load_ir_job")
     , spec_ (spec)
+    , convolver_spec_ (convolver_spec)
     , command_queue_ (command_queue)
 {
     ir_buffer_.setSize (static_cast<int> (ir_block.getNumChannels ()),
@@ -16,7 +18,7 @@ LoadIRJob::LoadIRJob (juce::dsp::AudioBlock<const float> ir_block,
 
 juce::ThreadPoolJob::JobStatus LoadIRJob::runJob ()
 {
-    auto convolver = std::make_unique<TimeDistributedNUPC> (ir_buffer_, spec_);
+    auto convolver = std::make_unique<Convolver> (ir_buffer_, spec_, convolver_spec_);
     ConvolutionCommandQueue::Commands command =
         ConvolutionCommandQueue::EngineReadyCommand {.convolver = std::move (convolver)};
     command_queue_.PushCommand (command);
@@ -102,9 +104,10 @@ void ConvolutionEngine::reset ()
 }
 
 void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block,
-                                const EngineSpec & engine_spec)
+                                const Convolver::ConvolverSpec & convolver_spec)
 {
     if (spec_ != std::nullopt)
-        thread_pool_.addJob (new LoadIRJob (ir_block, *spec_, command_queue_), true);
+        thread_pool_.addJob (new LoadIRJob (ir_block, *spec_, convolver_spec, command_queue_),
+                             true);
 }
 }

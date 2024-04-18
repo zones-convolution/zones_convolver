@@ -1,6 +1,6 @@
 #pragma once
 
-#include "time_distributed/TimeDistributedNUPC.h"
+#include "Convolver.h"
 
 #include <juce_core/juce_core.h>
 #include <juce_dsp/juce_dsp.h>
@@ -61,7 +61,7 @@ struct ConvolutionCommandQueue
 {
     struct EngineReadyCommand
     {
-        std::unique_ptr<TimeDistributedNUPC> convolver;
+        std::unique_ptr<Convolver> convolver;
     };
 
     using Commands = std::variant<EngineReadyCommand>;
@@ -77,7 +77,7 @@ struct ConvolutionNotificationQueue
 {
     struct DisposeEngineCommand
     {
-        std::unique_ptr<TimeDistributedNUPC> convolver;
+        std::unique_ptr<Convolver> convolver;
     };
 
     using Commands = std::variant<DisposeEngineCommand>;
@@ -94,6 +94,7 @@ class LoadIRJob : public juce::ThreadPoolJob
 public:
     explicit LoadIRJob (juce::dsp::AudioBlock<const float> ir_block,
                         const juce::dsp::ProcessSpec & spec,
+                        const Convolver::ConvolverSpec & convolver_spec,
                         ConvolutionCommandQueue::VisitorQueue & command_queue);
     ~LoadIRJob () override = default;
     JobStatus runJob () override;
@@ -101,6 +102,7 @@ public:
 private:
     juce::AudioBuffer<float> ir_buffer_;
     juce::dsp::ProcessSpec spec_;
+    Convolver::ConvolverSpec convolver_spec_;
     ConvolutionCommandQueue::VisitorQueue & command_queue_;
 };
 
@@ -118,7 +120,8 @@ public:
     void operator() (
         ConvolutionNotificationQueue::DisposeEngineCommand & dispose_engine_command) override;
 
-    void LoadIR (juce::dsp::AudioBlock<const float> ir_block, const EngineSpec & engine_spec);
+    void LoadIR (juce::dsp::AudioBlock<const float> ir_block,
+                 const Convolver::ConvolverSpec & convolver_spec);
     void operator() (ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command) override;
 
     void prepare (const juce::dsp::ProcessSpec & spec) override;
@@ -126,8 +129,8 @@ public:
     void reset () override;
 
 private:
-    std::unique_ptr<TimeDistributedNUPC> convolver_;
-    std::unique_ptr<TimeDistributedNUPC> pending_convolver_;
+    std::unique_ptr<Convolver> convolver_;
+    std::unique_ptr<Convolver> pending_convolver_;
 
     juce::LinearSmoothedValue<float> smoothed_value_;
 

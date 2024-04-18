@@ -26,5 +26,6 @@ private:
     juce::dsp::ProcessSpec process_spec_;
     ConvolverSpec convolver_spec_;
     int num_convolution_channels_;
+    int max_block_size_;
 };
 }
