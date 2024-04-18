@@ -15,6 +15,7 @@ END_JUCE_MODULE_DECLARATION
 */
 
 #include "ConvolutionEngine.h"
+#include "Convolver.h"
 #include "PartitionSchemes.h"
 #include "UniformPartitionedConvolver.h"
 #include "time_distributed/TimeDistributedNUPC.h"

@@ -111,10 +111,6 @@ class ConvolutionEngine
     , public juce::Thread
 {
 public:
-    struct EngineSpec
-    {
-    };
-
     explicit ConvolutionEngine (juce::ThreadPool & thread_pool);
     ~ConvolutionEngine () override;
 
@@ -122,13 +118,12 @@ public:
     void operator() (
         ConvolutionNotificationQueue::DisposeEngineCommand & dispose_engine_command) override;
 
-    void LoadIR (juce::dsp::AudioBlock<const float> ir_block);
+    void LoadIR (juce::dsp::AudioBlock<const float> ir_block, const EngineSpec & engine_spec);
     void operator() (ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command) override;
 
     void prepare (const juce::dsp::ProcessSpec & spec) override;
     void process (const juce::dsp::ProcessContextReplacing<float> & replacing) override;
     void reset () override;
-    void ConfigureEngine (const EngineSpec & engine_spec);
 
 private:
     std::unique_ptr<TimeDistributedNUPC> convolver_;
@@ -140,7 +135,6 @@ private:
     juce::ThreadPool & thread_pool_;
     ConvolutionCommandQueue::VisitorQueue command_queue_;
     ConvolutionNotificationQueue::VisitorQueue notification_queue_;
-    EngineSpec engine_spec_;
     juce::AudioBuffer<float> ir_buffer_;
 };
 }

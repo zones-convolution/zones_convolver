@@ -101,11 +101,8 @@ void ConvolutionEngine::reset ()
         convolver_->Reset ();
 }
 
-void ConvolutionEngine::ConfigureEngine (const EngineSpec & engine_spec)
-{
-}
-
-void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block)
+void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block,
+                                const EngineSpec & engine_spec)
 {
     if (spec_ != std::nullopt)
         thread_pool_.addJob (new LoadIRJob (ir_block, *spec_, command_queue_), true);

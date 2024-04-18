@@ -1,6 +1,7 @@
 #include "zones_convolver.h"
 
 #include "ConvolutionEngine.cpp"
+#include "Convolver.cpp"
 #include "PartitionSchemes.cpp"
 #include "UniformPartitionedConvolver.cpp"
 #include "time_distributed/TimeDistributedNUPC.cpp"
