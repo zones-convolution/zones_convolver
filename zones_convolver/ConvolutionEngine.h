@@ -122,6 +122,8 @@ public:
 
     void LoadIR (juce::dsp::AudioBlock<const float> ir_block,
                  const Convolver::ConvolverSpec & convolver_spec);
+    void Clear ();
+
     void operator() (ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command) override;
 
     void prepare (const juce::dsp::ProcessSpec & spec) override;

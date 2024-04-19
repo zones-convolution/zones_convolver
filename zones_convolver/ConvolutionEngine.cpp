@@ -110,4 +110,13 @@ void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block,
         thread_pool_.addJob (new LoadIRJob (ir_block, *spec_, convolver_spec, command_queue_),
                              true);
 }
+
+void ConvolutionEngine::Clear ()
+{
+    reset ();
+
+    convolver_ = nullptr;
+    pending_convolver_ = nullptr;
+}
+
 }
