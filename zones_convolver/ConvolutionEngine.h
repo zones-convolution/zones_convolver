@@ -140,6 +140,5 @@ private:
     juce::ThreadPool & thread_pool_;
     ConvolutionCommandQueue::VisitorQueue command_queue_;
     ConvolutionNotificationQueue::VisitorQueue notification_queue_;
-    juce::AudioBuffer<float> ir_buffer_;
 };
 }
