@@ -36,7 +36,7 @@ ConvolutionEngine::ConvolutionEngine (juce::ThreadPool & thread_pool)
 
 ConvolutionEngine::~ConvolutionEngine ()
 {
-    stopThread (10);
+    stopThread (100);
 }
 
 void ConvolutionEngine::run ()
