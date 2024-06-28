@@ -95,7 +95,9 @@ public:
     explicit LoadIRJob (juce::dsp::AudioBlock<const float> ir_block,
                         const juce::dsp::ProcessSpec & spec,
                         const Convolver::ConvolverSpec & convolver_spec,
-                        ConvolutionCommandQueue::VisitorQueue & command_queue);
+                        ConvolutionCommandQueue::VisitorQueue & command_queue,
+                        std::mutex & load_mutex,
+                        std::function<void ()> on_loading_complete);
     ~LoadIRJob () override = default;
     JobStatus runJob () override;
 
@@ -104,6 +106,8 @@ private:
     juce::dsp::ProcessSpec spec_;
     Convolver::ConvolverSpec convolver_spec_;
     ConvolutionCommandQueue::VisitorQueue & command_queue_;
+    std::mutex & load_mutex_;
+    std::function<void ()> on_loading_complete_;
 };
 
 class ConvolutionEngine
@@ -130,6 +134,9 @@ public:
     void process (const juce::dsp::ProcessContextReplacing<float> & replacing) override;
     void reset () override;
 
+    [[nodiscard]] bool IsLoading () const;
+    std::function<void ()> OnLoadingUpdated;
+
 private:
     std::unique_ptr<Convolver> convolver_;
     std::unique_ptr<Convolver> pending_convolver_;
@@ -140,5 +147,8 @@ private:
     juce::ThreadPool & thread_pool_;
     ConvolutionCommandQueue::VisitorQueue command_queue_;
     ConvolutionNotificationQueue::VisitorQueue notification_queue_;
+
+    std::mutex load_mutex_;
+    bool is_loading_ = false;
 };
 }

@@ -1,15 +1,21 @@
 #include "ConvolutionEngine.h"
 
+#include <juce_events/juce_events.h>
+
 namespace zones
 {
 LoadIRJob::LoadIRJob (juce::dsp::AudioBlock<const float> ir_block,
                       const juce::dsp::ProcessSpec & spec,
                       const Convolver::ConvolverSpec & convolver_spec,
-                      ConvolutionCommandQueue::VisitorQueue & command_queue)
+                      ConvolutionCommandQueue::VisitorQueue & command_queue,
+                      std::mutex & load_mutex,
+                      std::function<void ()> on_loading_complete)
     : ThreadPoolJob ("load_ir_job")
     , spec_ (spec)
     , convolver_spec_ (convolver_spec)
     , command_queue_ (command_queue)
+    , load_mutex_ (load_mutex)
+    , on_loading_complete_ (on_loading_complete)
 {
     ir_buffer_.setSize (static_cast<int> (ir_block.getNumChannels ()),
                         static_cast<int> (ir_block.getNumSamples ()));
@@ -22,8 +28,13 @@ juce::ThreadPoolJob::JobStatus LoadIRJob::runJob ()
     ConvolutionCommandQueue::Commands command =
         ConvolutionCommandQueue::EngineReadyCommand {.convolver = std::move (convolver)};
 
+    std::lock_guard guard {load_mutex_};
+
     if (! shouldExit ())
+    {
         command_queue_.PushCommand (command);
+        on_loading_complete_ ();
+    }
 
     return jobHasFinished;
 }
@@ -101,6 +112,7 @@ void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float>
 
 void ConvolutionEngine::reset ()
 {
+    is_loading_ = false;
     smoothed_value_.setCurrentAndTargetValue (1.f);
     if (convolver_ != nullptr)
         convolver_->Reset ();
@@ -109,17 +121,39 @@ void ConvolutionEngine::reset ()
 void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block,
                                 const Convolver::ConvolverSpec & convolver_spec)
 {
+    std::lock_guard guard (
+        load_mutex_); // Obtained to guarantee load order - probably not the best way to do this...
+
     thread_pool_.removeAllJobs (true, 0);
 
     if (spec_ != std::nullopt)
-        thread_pool_.addJob (new LoadIRJob (ir_block, *spec_, convolver_spec, command_queue_),
+    {
+        is_loading_ = true;
+        if (OnLoadingUpdated)
+            OnLoadingUpdated ();
+
+        thread_pool_.addJob (new LoadIRJob (ir_block,
+                                            *spec_,
+                                            convolver_spec,
+                                            command_queue_,
+                                            load_mutex_,
+                                            [&]
+                                            {
+                                                is_loading_ = false;
+                                                juce::MessageManager::callAsync (
+                                                    [&]
+                                                    {
+                                                        if (OnLoadingUpdated)
+                                                            OnLoadingUpdated ();
+                                                    });
+                                            }),
                              true);
+    }
 }
 
 void ConvolutionEngine::Clear ()
 {
     reset ();
-
     convolver_ = nullptr;
     pending_convolver_ = nullptr;
 }
