@@ -21,7 +21,10 @@ juce::ThreadPoolJob::JobStatus LoadIRJob::runJob ()
     auto convolver = std::make_unique<Convolver> (ir_buffer_, spec_, convolver_spec_);
     ConvolutionCommandQueue::Commands command =
         ConvolutionCommandQueue::EngineReadyCommand {.convolver = std::move (convolver)};
-    command_queue_.PushCommand (command);
+
+    if (! shouldExit ())
+        command_queue_.PushCommand (command);
+
     return jobHasFinished;
 }
 
@@ -106,6 +109,8 @@ void ConvolutionEngine::reset ()
 void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block,
                                 const Convolver::ConvolverSpec & convolver_spec)
 {
+    thread_pool_.removeAllJobs (true, 0);
+
     if (spec_ != std::nullopt)
         thread_pool_.addJob (new LoadIRJob (ir_block, *spec_, convolver_spec, command_queue_),
                              true);
