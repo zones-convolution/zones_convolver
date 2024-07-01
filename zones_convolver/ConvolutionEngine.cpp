@@ -158,4 +158,9 @@ void ConvolutionEngine::Clear ()
     pending_convolver_ = nullptr;
 }
 
+bool ConvolutionEngine::IsLoading () const
+{
+    return is_loading_;
+}
+
 }
