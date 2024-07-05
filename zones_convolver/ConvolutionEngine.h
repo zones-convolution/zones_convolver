@@ -110,11 +110,17 @@ private:
     std::function<void ()> on_loading_complete_;
 };
 
+struct ConvolutionEngineListener
+{
+    virtual void OnLoadingUpdated () = 0;
+};
+
 class ConvolutionEngine
     : public juce::dsp::ProcessorBase
     , public ConvolutionCommandQueue::Visitor
     , public ConvolutionNotificationQueue::Visitor
     , public juce::Thread
+    , public juce::ListenerList<ConvolutionEngineListener>
 {
 public:
     explicit ConvolutionEngine (juce::ThreadPool & thread_pool);
@@ -135,9 +141,10 @@ public:
     void reset () override;
 
     [[nodiscard]] bool IsLoading () const;
-    std::function<void ()> OnLoadingUpdated;
 
 private:
+    void EmitLoadingEvent ();
+
     std::unique_ptr<Convolver> convolver_;
     std::unique_ptr<Convolver> pending_convolver_;
 

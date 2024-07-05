@@ -129,8 +129,7 @@ void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block,
     if (spec_ != std::nullopt)
     {
         is_loading_ = true;
-        if (OnLoadingUpdated)
-            OnLoadingUpdated ();
+        EmitLoadingEvent ();
 
         thread_pool_.addJob (new LoadIRJob (ir_block,
                                             *spec_,
@@ -141,11 +140,7 @@ void ConvolutionEngine::LoadIR (juce::dsp::AudioBlock<const float> ir_block,
                                             {
                                                 is_loading_ = false;
                                                 juce::MessageManager::callAsync (
-                                                    [&]
-                                                    {
-                                                        if (OnLoadingUpdated)
-                                                            OnLoadingUpdated ();
-                                                    });
+                                                    [&] { EmitLoadingEvent (); });
                                             }),
                              true);
     }
@@ -161,6 +156,11 @@ void ConvolutionEngine::Clear ()
 bool ConvolutionEngine::IsLoading () const
 {
     return is_loading_;
+}
+
+void ConvolutionEngine::EmitLoadingEvent ()
+{
+    call ([] (ConvolutionEngineListener & listener) { listener.OnLoadingUpdated (); });
 }
 
 }
