@@ -14,7 +14,8 @@ TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_
     auto partition_scheme = GetPartitionScheme (kGarciaResults, max_block_size_, ir_num_samples);
 
     const auto upc_layout = partition_scheme.front ();
-    auto offset = upc_layout.GetSubConvolverSizeSamples (max_block_size_);
+    auto offset = std::min (upc_layout.GetSubConvolverSizeSamples (max_block_size_),
+                            static_cast<int> (ir_block.getNumSamples ()));
 
     auto upc_ir_segment = ir_block.getSubBlock (0, offset);
     upc_ = std::make_unique<UniformPartitionedConvolver> (spec, upc_ir_segment);
