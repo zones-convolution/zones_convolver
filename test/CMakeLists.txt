@@ -23,6 +23,7 @@ target_compile_definitions(unit_tests
         PUBLIC
         JUCE_WEB_BROWSER=0
         JUCE_VST3_CAN_REPLACE_VST2=0
+        JUCE_USE_CURL=0
 )
 
 target_compile_options(unit_tests
