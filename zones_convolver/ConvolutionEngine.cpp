@@ -71,7 +71,20 @@ void ConvolutionEngine::operator() (
 void ConvolutionEngine::operator() (
     ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command)
 {
+    // initial the strategy
+    // fade_type_ = crossfade
+    // if (crossfade)
+    // fade_smoothed_value
     smoothed_value_.setTargetValue (0.f);
+
+    if (pending_convolver_ != nullptr)
+    {
+        ConvolutionNotificationQueue::Commands notification =
+            ConvolutionNotificationQueue::DisposeEngineCommand {.convolver =
+                                                                    std::move (pending_convolver_)};
+        notification_queue_.PushCommand (notification);
+    }
+
     pending_convolver_ = std::move (engine_ready_command.convolver);
 }
 
