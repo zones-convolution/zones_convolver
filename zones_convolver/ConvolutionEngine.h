@@ -146,10 +146,16 @@ private:
     void EmitLoadingEvent ();
 
     std::unique_ptr<Convolver> convolver_;
+    std::unique_ptr<Convolver> fade_convolver_;
     std::unique_ptr<Convolver> pending_convolver_;
 
-    juce::LinearSmoothedValue<float> smoothed_value_;
+    juce::LinearSmoothedValue<float> smoothed_value_in_;
+    juce::LinearSmoothedValue<float> smoothed_value_out_;
 
+    void BeginFade ();
+    void ResetFade ();
+
+    juce::AudioBuffer<float> fade_buffer_;
     std::optional<juce::dsp::ProcessSpec> spec_ = std::nullopt;
     juce::ThreadPool & thread_pool_;
     ConvolutionCommandQueue::VisitorQueue command_queue_;
