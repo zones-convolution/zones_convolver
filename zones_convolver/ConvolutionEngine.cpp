@@ -107,8 +107,9 @@ void ConvolutionEngine::prepare (const juce::dsp::ProcessSpec & spec)
     // Should we be resetting Convolvers here to the newest spec ?? - ie rebuilding scheme for new
     // block size etc... + channels etc?
 
-    static constexpr auto kSmoothingTime = 0.6f;
-    smoothed_value_.reset (spec.sampleRate, kSmoothingTime);
+    static constexpr auto kSmoothingTime = 8.0f;
+    smoothed_value_in_.reset (spec.sampleRate, kSmoothingTime);
+    smoothed_value_out_.reset (spec.sampleRate, kSmoothingTime);
     spec_ = spec;
 
     fade_buffer_.setSize (spec.numChannels, spec.maximumBlockSize);
@@ -139,8 +140,10 @@ void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float>
         if (! smoothed_value_in_.isSmoothing ())
         {
             // Fade has finished
-            notification_queue_.PushCommand (ConvolutionNotificationQueue::DisposeEngineCommand {
-                .convolver = std::move (convolver_)});
+            ConvolutionNotificationQueue::Commands dispose_command =
+                ConvolutionNotificationQueue::DisposeEngineCommand {.convolver =
+                                                                        std::move (convolver_)};
+            notification_queue_.PushCommand (dispose_command);
             convolver_ = std::move (fade_convolver_);
 
             ResetFade ();
@@ -173,13 +176,9 @@ void ConvolutionEngine::reset ()
     fade_buffer_.clear ();
 
     if (pending_convolver_ != nullptr)
-    {
-        convolver_ = pending_convolver_;
-    }
+        convolver_ = std::move (pending_convolver_);
     else if (fade_convolver_ != nullptr)
-    {
-        convolver_ = fade_convolver_;
-    }
+        convolver_ = std::move (fade_convolver_);
 
     if (convolver_ != nullptr)
         convolver_->Reset ();
