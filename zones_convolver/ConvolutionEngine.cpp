@@ -25,6 +25,8 @@ LoadIRJob::LoadIRJob (juce::dsp::AudioBlock<const float> ir_block,
 juce::ThreadPoolJob::JobStatus LoadIRJob::runJob ()
 {
     auto convolver = std::make_unique<Convolver> (ir_buffer_, spec_, convolver_spec_);
+    jassert (convolver != nullptr);
+
     ConvolutionCommandQueue::Commands command =
         ConvolutionCommandQueue::EngineReadyCommand {.convolver = std::move (convolver)};
 
@@ -71,6 +73,12 @@ void ConvolutionEngine::operator() (
 void ConvolutionEngine::operator() (
     ConvolutionCommandQueue::EngineReadyCommand & engine_ready_command)
 {
+    if (convolver_ == nullptr)
+    {
+        convolver_ = std::move (engine_ready_command.convolver);
+        return;
+    }
+
     if (pending_convolver_ != nullptr)
     {
         ConvolutionNotificationQueue::Commands notification =
@@ -92,6 +100,28 @@ void ConvolutionEngine::operator() (
 
 void ConvolutionEngine::BeginFade ()
 {
+    auto ir_size = fade_convolver_->GetNumSamples ();
+
+    auto & convolver_spec = fade_convolver_->GetConvolverSpec ();
+    current_fade_strategy_ = convolver_spec.fade_strategy;
+
+    if (ir_size >= max_crossfade_ir_length_)
+        current_fade_strategy_ = Convolver::FadeStrategy::kInOut;
+
+    if (current_fade_strategy_ == Convolver::FadeStrategy::kCrossfade)
+    {
+        auto fade_samples =
+            std::clamp (static_cast<int> (std::ceil (kFadeRatio * static_cast<float> (ir_size))),
+                        lower_fade_bound_,
+                        upper_fade_bound_);
+
+        SetFadeTime (fade_samples);
+    }
+    else
+    {
+        SetFadeTime (in_out_fade_length_);
+    }
+
     smoothed_value_in_.setTargetValue (1.f);
     smoothed_value_out_.setTargetValue (0.f);
 }
@@ -107,10 +137,18 @@ void ConvolutionEngine::prepare (const juce::dsp::ProcessSpec & spec)
     // Should we be resetting Convolvers here to the newest spec ?? - ie rebuilding scheme for new
     // block size etc... + channels etc?
 
-    static constexpr auto kSmoothingTime = 8.0f;
-    smoothed_value_in_.reset (spec.sampleRate, kSmoothingTime);
-    smoothed_value_out_.reset (spec.sampleRate, kSmoothingTime);
     spec_ = spec;
+
+    lower_fade_bound_ =
+        static_cast<int> (std::ceil (kLowerFadeTimeS * static_cast<float> (spec.sampleRate)));
+    upper_fade_bound_ =
+        static_cast<int> (std::ceil (kUpperFadeTimeS * static_cast<float> (spec.sampleRate)));
+
+    max_crossfade_ir_length_ =
+        static_cast<int> (std::ceil (kMaxCrossFadeIrTimeS * static_cast<float> (spec.sampleRate)));
+
+    in_out_fade_length_ =
+        static_cast<int> (std::ceil (kInOutFadeTimeS * static_cast<float> (spec.sampleRate)));
 
     fade_buffer_.setSize (spec.numChannels, spec.maximumBlockSize);
 
@@ -123,19 +161,38 @@ void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float>
 
     if (fade_convolver_ != nullptr)
     {
-        // Process the cross-fade
         auto output_block = replacing.getOutputBlock ();
-        juce::dsp::AudioBlock<float> fade_block {fade_buffer_};
-        fade_block.copyFrom (output_block);
+        if (current_fade_strategy_ == Convolver::FadeStrategy::kCrossfade)
+        {
+            // Process the cross-fade
 
-        if (convolver_ != nullptr)
-            convolver_->Process (replacing);
+            juce::dsp::AudioBlock<float> fade_block {fade_buffer_};
+            fade_block.copyFrom (output_block);
 
-        fade_convolver_->Process (fade_block);
+            if (convolver_ != nullptr)
+                convolver_->Process (replacing);
 
-        output_block.multiplyBy (smoothed_value_out_);
-        fade_block.multiplyBy (smoothed_value_in_);
-        output_block.add (fade_block);
+            fade_convolver_->Process (fade_block);
+
+            output_block.multiplyBy (smoothed_value_out_);
+            fade_block.multiplyBy (smoothed_value_in_);
+            output_block.add (fade_block);
+        }
+        else
+        {
+            if (smoothed_value_out_.isSmoothing ())
+            {
+                if (convolver_ != nullptr)
+                    convolver_->Process (replacing);
+
+                output_block.multiplyBy (smoothed_value_out_);
+            }
+            else
+            {
+                fade_convolver_->Process (replacing);
+                output_block.multiplyBy (smoothed_value_in_);
+            }
+        }
 
         if (! smoothed_value_in_.isSmoothing ())
         {
@@ -227,6 +284,12 @@ bool ConvolutionEngine::IsLoading () const
 void ConvolutionEngine::EmitLoadingEvent ()
 {
     call ([] (ConvolutionEngineListener & listener) { listener.OnLoadingUpdated (); });
+}
+
+void ConvolutionEngine::SetFadeTime (int fade_time_samples)
+{
+    smoothed_value_in_.reset (fade_time_samples);
+    smoothed_value_out_.reset (fade_time_samples);
 }
 
 }

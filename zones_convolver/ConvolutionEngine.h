@@ -145,6 +145,11 @@ public:
 private:
     void EmitLoadingEvent ();
 
+    void BeginFade ();
+    void ResetFade ();
+
+    void SetFadeTime (int fade_time_samples);
+
     std::unique_ptr<Convolver> convolver_;
     std::unique_ptr<Convolver> fade_convolver_;
     std::unique_ptr<Convolver> pending_convolver_;
@@ -152,14 +157,23 @@ private:
     juce::LinearSmoothedValue<float> smoothed_value_in_;
     juce::LinearSmoothedValue<float> smoothed_value_out_;
 
-    void BeginFade ();
-    void ResetFade ();
-
     juce::AudioBuffer<float> fade_buffer_;
     std::optional<juce::dsp::ProcessSpec> spec_ = std::nullopt;
     juce::ThreadPool & thread_pool_;
     ConvolutionCommandQueue::VisitorQueue command_queue_;
     ConvolutionNotificationQueue::VisitorQueue notification_queue_;
+    Convolver::FadeStrategy current_fade_strategy_ = Convolver::FadeStrategy::kInOut;
+
+    static constexpr float kLowerFadeTimeS = 0.1f;
+    static constexpr float kUpperFadeTimeS = 4.0f;
+    static constexpr float kFadeRatio = 0.14f;
+    static constexpr float kMaxCrossFadeIrTimeS = 10.0f;
+    static constexpr float kInOutFadeTimeS = 0.4f;
+
+    int lower_fade_bound_;
+    int upper_fade_bound_;
+    int max_crossfade_ir_length_;
+    int in_out_fade_length_;
 
     std::mutex load_mutex_;
     bool is_loading_ = false;

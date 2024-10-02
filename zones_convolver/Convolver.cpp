@@ -7,6 +7,7 @@ zones::Convolver::Convolver (juce::dsp::AudioBlock<const float> ir_block,
     , convolver_spec_ (convolver_spec)
 {
     num_convolution_channels_ = ir_block.getNumChannels ();
+    num_samples_ = ir_block.getNumSamples ();
     max_block_size_ = static_cast<int> (process_spec_.maximumBlockSize);
     auto sample_rate = process_spec_.sampleRate;
 
@@ -70,4 +71,14 @@ void zones::Convolver::Reset ()
 {
     time_distributed_nupc_->Reset ();
     routing_buffer_.clear ();
+}
+
+int zones::Convolver::GetNumSamples () const
+{
+    return num_samples_;
+}
+
+const zones::Convolver::ConvolverSpec & zones::Convolver::GetConvolverSpec () const
+{
+    return convolver_spec_;
 }
