@@ -63,7 +63,12 @@ public:
     ~MyPluginProcessor () override = default;
     MyPluginProcessor (juce::dsp::AudioBlock<const float> ir_to_load)
     {
-        convolver_.LoadIR (ir_to_load);
+        zones::Convolver::ConvolverSpec quad_spec {
+          .input_routing = {0, 1, 2, 3},
+          .output_routing = {0, 1, 2, 3},
+          .fade_strategy = zones::Convolver::FadeStrategy::kCrossfade
+        };
+        convolver_.LoadIR (ir_to_load, quad_spec);
     }
 
     void prepare (const juce::dsp::ProcessSpec & spec) override
@@ -106,7 +111,7 @@ add_subdirectory(path/to/zones_convolver)
 target_link_libraries(juce_project
         PRIVATE
         zones_convolver
-        )
+)
 ```
 
 ## Projucer
