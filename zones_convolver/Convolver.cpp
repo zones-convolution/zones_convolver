@@ -17,8 +17,8 @@ zones::Convolver::Convolver (juce::dsp::AudioBlock<const float> ir_block,
         ir_block,
         juce::dsp::ProcessSpec {
             .sampleRate = sample_rate,
-            .maximumBlockSize = static_cast<uint> (max_block_size_),
-            .numChannels = static_cast<uint> (num_convolution_channels_),
+            .maximumBlockSize = static_cast<juce::uint32> (max_block_size_),
+            .numChannels = static_cast<juce::uint32> (num_convolution_channels_),
         });
 }
 
