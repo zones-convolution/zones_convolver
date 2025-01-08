@@ -167,7 +167,8 @@ void ConvolutionEngine::process (const juce::dsp::ProcessContextReplacing<float>
             // Process the cross-fade
 
             juce::dsp::AudioBlock<float> fade_block {fade_buffer_};
-            fade_block.copyFrom (output_block);
+            fade_block =
+                fade_block.getSubBlock (0, output_block.getNumSamples ()).copyFrom (output_block);
 
             if (convolver_ != nullptr)
                 convolver_->Process (replacing);
