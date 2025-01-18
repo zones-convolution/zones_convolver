@@ -58,7 +58,7 @@ void zones::Convolver::Process (const juce::dsp::ProcessContextReplacing<float> 
 
         time_distributed_nupc_->Process ({routing_sub_block});
 
-        output_block.clear ();
+        output_sub_block.clear ();
         for (auto convolution_channel = 0; convolution_channel < num_convolution_channels_;
              ++convolution_channel)
         {
