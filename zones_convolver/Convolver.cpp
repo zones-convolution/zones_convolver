@@ -3,13 +3,19 @@
 zones::Convolver::Convolver (juce::dsp::AudioBlock<const float> ir_block,
                              const juce::dsp::ProcessSpec & process_spec,
                              const zones::Convolver::ConvolverSpec & convolver_spec)
-    : process_spec_ (process_spec)
-    , convolver_spec_ (convolver_spec)
+    : convolver_spec_ (convolver_spec)
 {
     num_convolution_channels_ = ir_block.getNumChannels ();
     num_samples_ = ir_block.getNumSamples ();
-    max_block_size_ = static_cast<int> (process_spec_.maximumBlockSize);
-    auto sample_rate = process_spec_.sampleRate;
+
+    if (convolver_spec_.internal_block_size.has_value () &&
+        convolver_spec_.internal_block_size != 0)
+        max_block_size_ = std::min (static_cast<int> (process_spec.maximumBlockSize),
+                                    *convolver_spec_.internal_block_size);
+    else
+        max_block_size_ = static_cast<int> (process_spec.maximumBlockSize);
+
+    auto sample_rate = process_spec.sampleRate;
 
     routing_buffer_.setSize (num_convolution_channels_, max_block_size_);
 

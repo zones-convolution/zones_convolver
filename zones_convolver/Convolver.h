@@ -18,6 +18,7 @@ public:
         std::vector<int> input_routing;
         std::vector<int> output_routing;
         FadeStrategy fade_strategy = FadeStrategy::kCrossfade;
+        std::optional<int> internal_block_size = std::nullopt;
     };
 
     Convolver (juce::dsp::AudioBlock<const float> ir_block,
@@ -33,7 +34,6 @@ private:
     juce::AudioBuffer<float> routing_buffer_;
     std::unique_ptr<TimeDistributedNUPC> time_distributed_nupc_;
 
-    juce::dsp::ProcessSpec process_spec_;
     ConvolverSpec convolver_spec_;
     int num_convolution_channels_;
     int max_block_size_;
