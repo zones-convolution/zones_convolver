@@ -1,5 +1,21 @@
 #include "Convolver.h"
 
+int powerOfTwoEqualOrBelow (int n)
+{
+    if (n <= 0)
+        return n;
+
+    if ((n & (n - 1)) == 0)
+        return n;
+
+    int po2 = 1;
+    while (po2 <= n)
+    {
+        po2 <<= 1;
+    }
+    return po2 >> 1;
+}
+
 zones::Convolver::Convolver (juce::dsp::AudioBlock<const float> ir_block,
                              const juce::dsp::ProcessSpec & process_spec,
                              const zones::Convolver::ConvolverSpec & convolver_spec)
@@ -14,6 +30,8 @@ zones::Convolver::Convolver (juce::dsp::AudioBlock<const float> ir_block,
                                     *convolver_spec_.internal_block_size);
     else
         max_block_size_ = static_cast<int> (process_spec.maximumBlockSize);
+
+    max_block_size_ = powerOfTwoEqualOrBelow (max_block_size_);
 
     auto sample_rate = process_spec.sampleRate;
 
