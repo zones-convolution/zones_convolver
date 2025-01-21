@@ -41,9 +41,10 @@ static void ExtendSchemeToFitIR (PartitionScheme & scheme, int sample_difference
     auto & last_partition = scheme.layout.back ();
     auto last_partition_size_samples = block_size * last_partition.partition_size_blocks;
 
-    auto num_partitions_to_add =
-        static_cast<int> (std::ceil (sample_difference / last_partition_size_samples));
-    last_partition.num_partitions += num_partitions_to_add;
+    float num_partitions_to_add_float =
+        static_cast<float> (sample_difference) / static_cast<float> (last_partition_size_samples);
+    int num_partitions_to_add_int = static_cast<int> (std::ceil (num_partitions_to_add_float));
+    last_partition.num_partitions += num_partitions_to_add_int;
 }
 
 static void ReduceSchemeToFitIR (PartitionScheme & scheme, int sample_difference, int block_size)
@@ -56,9 +57,11 @@ static void ReduceSchemeToFitIR (PartitionScheme & scheme, int sample_difference
     if (num_samples_in_last_partition > remaining_samples_to_remove)
     {
         auto last_partition_size_samples = block_size * last_partition.partition_size_blocks;
-        auto num_partitions_to_remove = static_cast<int> (
-            std::floor (remaining_samples_to_remove / last_partition_size_samples));
-        last_partition.num_partitions -= num_partitions_to_remove;
+        float num_partitions_to_remove_float = static_cast<float> (remaining_samples_to_remove) /
+                                               static_cast<float> (last_partition_size_samples);
+        auto num_partitions_to_remove_int =
+            static_cast<int> (std::floor (num_partitions_to_remove_float));
+        last_partition.num_partitions -= num_partitions_to_remove_int;
     }
     else
     {
