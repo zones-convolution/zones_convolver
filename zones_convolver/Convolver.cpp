@@ -31,7 +31,7 @@ zones::Convolver::Convolver (juce::dsp::AudioBlock<const float> ir_block,
     else
         max_block_size_ = static_cast<int> (process_spec.maximumBlockSize);
 
-    max_block_size_ = powerOfTwoEqualOrBelow (max_block_size_);
+    max_block_size_ = std::clamp (powerOfTwoEqualOrBelow (max_block_size_), 32, 2048);
 
     auto sample_rate = process_spec.sampleRate;
 
