@@ -84,6 +84,9 @@ GetPartitionScheme (const GarciaResults & garcia_results, int block_size, int ir
     else
         ReduceSchemeToFitIR (nearest_scheme, sample_difference, block_size);
 
+    // currently needed to allow TDUPC enough time for random process blocks. the optimum garcia
+    // results should be adapted instead
+    nearest_scheme.layout.front ().num_partitions += 1;
     return nearest_scheme.layout;
 }
 }
