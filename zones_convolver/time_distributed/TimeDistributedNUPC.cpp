@@ -1,5 +1,7 @@
 #include "TimeDistributedNUPC.h"
 
+#include "melatonin_audio_sparklines/melatonin_audio_sparklines.h"
+
 namespace zones
 {
 TimeDistributedNUPC::TimeDistributedNUPC (juce::dsp::AudioBlock<const float> ir_block,
