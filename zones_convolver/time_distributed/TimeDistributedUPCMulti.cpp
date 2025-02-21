@@ -58,12 +58,13 @@ TimeDistributedUPCMulti::TimeDistributedUPCMulti (const juce::dsp::ProcessSpec &
     for (const auto & power_of_2 : GetPowersOf2In (num_channels))
     {
         auto reduction = std::log2 (power_of_2);
-        auto num_decompositions =
-            static_cast<int> (std::log2 (partition_size_blocks / 2)) - reduction;
+        auto num_decompositions = static_cast<int> (
+            std::max (0, static_cast<int> (std::log2 (partition_size_blocks / 2) - reduction)));
+        auto channel_phase_size = static_cast<int> (std::pow (2, num_decompositions + 1));
 
         for (auto channel_index = 0; channel_index < power_of_2; ++channel_index)
         {
-            auto transform_offset = channel_index * (partition_size_blocks / num_channels);
+            auto transform_offset = (channel_index * channel_phase_size) % partition_size_blocks;
             tdupcs_.emplace_back (spec,
                                   partition_size_blocks,
                                   filter_partitions_,
