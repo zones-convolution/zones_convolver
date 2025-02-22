@@ -7,6 +7,7 @@ using namespace zones;
 
 enum ConvolverType
 {
+    CONVOLVER,
     UPC,
     TDNUPC,
     TDUPC,
@@ -97,37 +98,128 @@ void CreateandConvolveIR (ConvolverType convolverType,
                                      static_cast<juce::uint32> (convolver_block_size),
                                  .numChannels = static_cast<juce::uint32> (num_process_channels)};
 
-    // prepare convolver
-    UniformPartitionedConvolver convolver {spec, ir_block};
-
-    // process for each block combination
-    for (auto subblock_combination = 0; subblock_combination < process_subblocks.size ();
-         ++subblock_combination)
+    // lots of code repetition here
+    switch (convolverType)
     {
-        convolver.Reset ();
-        input_block.clear ();
-        for (auto channel_index = 0; channel_index < input_block.getNumChannels (); ++channel_index)
-            input_block.setSample (channel_index, 0, 1.f);
+        case UPC:
+            {
+                // prepare convolver
+                UniformPartitionedConvolver convolver {spec, ir_block};
 
-        auto & subblock_vector = process_subblocks [subblock_combination];
+                // process for each block combination
+                for (auto subblock_combination = 0;
+                     subblock_combination < process_subblocks.size ();
+                     ++subblock_combination)
+                {
+                    convolver.Reset ();
+                    input_block.clear ();
+                    for (auto channel_index = 0; channel_index < input_block.getNumChannels ();
+                         ++channel_index)
+                        input_block.setSample (channel_index, 0, 1.f);
 
-        for (auto & subblock : subblock_vector)
-        {
-            convolver.Process (subblock);
-        }
+                    auto & subblock_vector = process_subblocks [subblock_combination];
 
-        REQUIRE_THAT (input_block.getSubBlock (0, ir_length_samples),
-                      melatonin::isEqualTo (ir_block));
-        // the rest should be zero but at the moment has a small amount of noise in so an
-        // alternative check with less tolerance is used REQUIRE_THAT (input_block,
-        // melatonin::isEmptyAfter (ir_length_samples));
+                    for (auto & subblock : subblock_vector)
+                    {
+                        convolver.Process (subblock);
+                    }
 
-        juce::AudioBuffer<float> zero_buffer (num_process_channels,
-                                              input_block.getNumSamples () - ir_length_samples);
-        zero_buffer.clear ();
-        juce::dsp::AudioBlock<float> zero_block {zero_buffer};
-        REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
-                      melatonin::isEqualTo (zero_block, 0.00005f));
+                    REQUIRE_THAT (input_block.getSubBlock (0, ir_length_samples),
+                                  melatonin::isEqualTo (ir_block));
+                    // the rest should be zero but at the moment has a small amount of noise in so
+                    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
+                    // melatonin::isEmptyAfter (ir_length_samples));
+
+                    juce::AudioBuffer<float> zero_buffer (
+                        num_process_channels, input_block.getNumSamples () - ir_length_samples);
+                    zero_buffer.clear ();
+                    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
+                    REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
+                                  melatonin::isEqualTo (zero_block, 0.00005f));
+                }
+                break;
+            }
+        case CONVOLVER:
+            {
+                // prepare convolver
+
+                Convolver convolver {ir_block, spec, Convolver::ConvolverSpec {}};
+
+                // process for each block combination
+                for (auto subblock_combination = 0;
+                     subblock_combination < process_subblocks.size ();
+                     ++subblock_combination)
+                {
+                    convolver.Reset ();
+                    input_block.clear ();
+                    for (auto channel_index = 0; channel_index < input_block.getNumChannels ();
+                         ++channel_index)
+                        input_block.setSample (channel_index, 0, 1.f);
+
+                    auto & subblock_vector = process_subblocks [subblock_combination];
+
+                    for (auto & subblock : subblock_vector)
+                    {
+                        convolver.Process (subblock);
+                    }
+
+                    REQUIRE_THAT (input_block.getSubBlock (0, ir_length_samples),
+                                  melatonin::isEqualTo (ir_block));
+                    // the rest should be zero but at the moment has a small amount of noise in so
+                    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
+                    // melatonin::isEmptyAfter (ir_length_samples));
+
+                    juce::AudioBuffer<float> zero_buffer (
+                        num_process_channels, input_block.getNumSamples () - ir_length_samples);
+                    zero_buffer.clear ();
+                    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
+                    REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
+                                  melatonin::isEqualTo (zero_block, 0.00005f));
+                }
+                break;
+            }
+        case TDNUPC:
+            {
+                // prepare convolver
+                TimeDistributedNUPC convolver {ir_block, spec};
+
+                // process for each block combination
+                for (auto subblock_combination = 0;
+                     subblock_combination < process_subblocks.size ();
+                     ++subblock_combination)
+                {
+                    convolver.Reset ();
+                    input_block.clear ();
+                    for (auto channel_index = 0; channel_index < input_block.getNumChannels ();
+                         ++channel_index)
+                        input_block.setSample (channel_index, 0, 1.f);
+
+                    auto & subblock_vector = process_subblocks [subblock_combination];
+
+                    for (auto & subblock : subblock_vector)
+                    {
+                        convolver.Process (subblock);
+                    }
+
+                    REQUIRE_THAT (input_block.getSubBlock (0, ir_length_samples),
+                                  melatonin::isEqualTo (ir_block));
+                    // the rest should be zero but at the moment has a small amount of noise in so
+                    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
+                    // melatonin::isEmptyAfter (ir_length_samples));
+
+                    juce::AudioBuffer<float> zero_buffer (
+                        num_process_channels, input_block.getNumSamples () - ir_length_samples);
+                    zero_buffer.clear ();
+                    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
+                    REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
+                                  melatonin::isEqualTo (zero_block, 0.00005f));
+                }
+                break;
+            }
+        case TDUPC:
+            break;
+        case TDUPCMULTI:
+            break;
     }
 }
 
@@ -142,5 +234,19 @@ SCENARIO ("Generic Convolver Tests", "[Convolver]")
     {
         CreateandConvolveIR (
             ConvolverType::UPC, num_ir_channels, num_ir_channels, block_size, ir_length);
+    }
+}
+
+SCENARIO ("TDNUPC Tests", "[TDNUPC]")
+{
+    auto num_ir_channels = GENERATE (1, 2, 3, 4);
+    auto block_size = GENERATE (13);
+    auto ir_length = GENERATE (1, 1000);
+
+    SECTION ("test for:" + std::to_string (num_ir_channels) + "," + std::to_string (block_size) +
+             "," + std::to_string (ir_length))
+    {
+        CreateandConvolveIR (
+            ConvolverType::TDNUPC, num_ir_channels, num_ir_channels, block_size, ir_length);
     }
 }

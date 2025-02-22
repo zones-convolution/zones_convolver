@@ -74,6 +74,13 @@ static void ReduceSchemeToFitIR (PartitionScheme & scheme, int sample_difference
 std::vector<PartitionLayout>
 GetPartitionScheme (const GarciaResults & garcia_results, int block_size, int ir_num_samples)
 {
+    if (garcia_results.find (block_size) == garcia_results.end ())
+    {
+        auto num_upc_partitions = static_cast<int> (
+            std::ceil (static_cast<float> (ir_num_samples) / static_cast<float> (block_size)));
+
+        return {{1, num_upc_partitions}};
+    }
     auto partitioning_results = garcia_results.at (block_size);
     auto nearest_scheme = FindNearestPartitionScheme (partitioning_results, ir_num_samples);
 
