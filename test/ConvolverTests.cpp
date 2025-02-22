@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 #include <melatonin_test_helpers/melatonin_test_helpers.h>
 #include <zones_convolver/zones_convolver.h>
 
@@ -57,7 +58,8 @@ void CreateandConvolveIR (ConvolverType convolverType,
         block_size_subblocks.push_back (input_block.getSubBlock (offset, convolver_block_size));
         offset += convolver_block_size;
     }
-    block_size_subblocks.push_back (input_block.getSubBlock (offset));
+    if (offset < input_block.getNumSamples ())
+        block_size_subblocks.push_back (input_block.getSubBlock (offset));
     process_subblocks.push_back (std::move (block_size_subblocks));
 
     // large block size
@@ -70,7 +72,8 @@ void CreateandConvolveIR (ConvolverType convolverType,
             input_block.getSubBlock (large_block_size_offset, large_block_size));
         large_block_size_offset += large_block_size;
     }
-    large_block_size_subblocks.push_back (input_block.getSubBlock (large_block_size_offset));
+    if (large_block_size_offset < input_block.getNumSamples ())
+        large_block_size_subblocks.push_back (input_block.getSubBlock (large_block_size_offset));
     process_subblocks.push_back (std::move (large_block_size_subblocks));
 
     // non power of two
@@ -125,12 +128,19 @@ void CreateandConvolveIR (ConvolverType convolverType,
         juce::dsp::AudioBlock<float> zero_block {zero_buffer};
         REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
                       melatonin::isEqualTo (zero_block, 0.00005f));
-
-        std::cout << "subblock combination passed:" << subblock_combination << std::endl;
     }
 }
 
 SCENARIO ("Generic Convolver Tests", "[Convolver]")
 {
-    CreateandConvolveIR (ConvolverType::UPC, 1, 1, 1024, 10000);
+    auto num_ir_channels = GENERATE (1, 2, 3, 4, 5, 6, 7, 8, 10, 100);
+    auto block_size = GENERATE (1, 16, 32, 35, 1024, 2000);
+    auto ir_length = GENERATE (1, 15, 32, 1000);
+
+    SECTION ("test for:" + std::to_string (num_ir_channels) + "," + std::to_string (block_size) +
+             "," + std::to_string (ir_length))
+    {
+        CreateandConvolveIR (
+            ConvolverType::UPC, num_ir_channels, num_ir_channels, block_size, ir_length);
+    }
 }
