@@ -10,16 +10,32 @@ enum ConvolverType
     CONVOLVER,
     UPC,
     TDNUPC,
-    TDUPC,
     TDUPCMULTI
 };
+
+void CompareConvolverOutput (juce::dsp::AudioBlock<float> output_block,
+                             juce::dsp::AudioBlock<float> ir_block)
+{
+    auto num_ir_samples = ir_block.getNumSamples ();
+    REQUIRE_THAT (output_block.getSubBlock (0, num_ir_samples), melatonin::isEqualTo (ir_block));
+    // the rest should be zero but at the moment has a small amount of noise in so
+    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
+    // melatonin::isEmptyAfter (ir_length_samples));
+
+    juce::AudioBuffer<float> zero_buffer (output_block.getNumChannels (),
+                                          output_block.getNumSamples () - num_ir_samples);
+    zero_buffer.clear ();
+    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
+    REQUIRE_THAT (output_block.getSubBlock (num_ir_samples),
+                  melatonin::isEqualTo (zero_block, 0.00005f));
+}
 
 void CreateandConvolveIR (ConvolverType convolverType,
                           int num_ir_channels,
                           int num_process_channels,
                           int convolver_block_size,
                           int ir_length_samples,
-                          double sample_rate = 48000)
+                          int partition_size_blocks = 2)
 {
     // create IR block
     juce::AudioBuffer<float> ir;
@@ -93,6 +109,7 @@ void CreateandConvolveIR (ConvolverType convolverType,
     process_subblocks.push_back (std::move (non_po2_subblocks));
 
     // create processspec
+    double sample_rate = 48000;
     juce::dsp::ProcessSpec spec {.sampleRate = sample_rate,
                                  .maximumBlockSize =
                                      static_cast<juce::uint32> (convolver_block_size),
@@ -124,18 +141,7 @@ void CreateandConvolveIR (ConvolverType convolverType,
                         convolver.Process (subblock);
                     }
 
-                    REQUIRE_THAT (input_block.getSubBlock (0, ir_length_samples),
-                                  melatonin::isEqualTo (ir_block));
-                    // the rest should be zero but at the moment has a small amount of noise in so
-                    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
-                    // melatonin::isEmptyAfter (ir_length_samples));
-
-                    juce::AudioBuffer<float> zero_buffer (
-                        num_process_channels, input_block.getNumSamples () - ir_length_samples);
-                    zero_buffer.clear ();
-                    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
-                    REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
-                                  melatonin::isEqualTo (zero_block, 0.00005f));
+                    CompareConvolverOutput (input_block, ir_block);
                 }
                 break;
             }
@@ -163,18 +169,7 @@ void CreateandConvolveIR (ConvolverType convolverType,
                         convolver.Process (subblock);
                     }
 
-                    REQUIRE_THAT (input_block.getSubBlock (0, ir_length_samples),
-                                  melatonin::isEqualTo (ir_block));
-                    // the rest should be zero but at the moment has a small amount of noise in so
-                    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
-                    // melatonin::isEmptyAfter (ir_length_samples));
-
-                    juce::AudioBuffer<float> zero_buffer (
-                        num_process_channels, input_block.getNumSamples () - ir_length_samples);
-                    zero_buffer.clear ();
-                    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
-                    REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
-                                  melatonin::isEqualTo (zero_block, 0.00005f));
+                    CompareConvolverOutput (input_block, ir_block);
                 }
                 break;
             }
@@ -200,30 +195,41 @@ void CreateandConvolveIR (ConvolverType convolverType,
                     {
                         convolver.Process (subblock);
                     }
-
-                    REQUIRE_THAT (input_block.getSubBlock (0, ir_length_samples),
-                                  melatonin::isEqualTo (ir_block));
-                    // the rest should be zero but at the moment has a small amount of noise in so
-                    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
-                    // melatonin::isEmptyAfter (ir_length_samples));
-
-                    juce::AudioBuffer<float> zero_buffer (
-                        num_process_channels, input_block.getNumSamples () - ir_length_samples);
-                    zero_buffer.clear ();
-                    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
-                    REQUIRE_THAT (input_block.getSubBlock (ir_length_samples),
-                                  melatonin::isEqualTo (zero_block, 0.00005f));
+                    CompareConvolverOutput (input_block, ir_block);
                 }
                 break;
             }
-        case TDUPC:
-            break;
         case TDUPCMULTI:
-            break;
+            {
+                // prepare convolver
+                TimeDistributedUPCMulti convolver {spec, partition_size_blocks, ir_block};
+
+                // TDUPCMulti can only recieve equal block sizes
+                convolver.Reset ();
+                input_block.clear ();
+                for (auto channel_index = 0; channel_index < input_block.getNumChannels ();
+                     ++channel_index)
+                    input_block.setSample (channel_index, 0, 1.f);
+
+                auto & subblock_vector = process_subblocks [1];
+
+                for (auto & subblock : subblock_vector)
+                    convolver.Process (subblock);
+
+                auto offset = partition_size_blocks * convolver_block_size * 2;
+                juce::AudioBuffer<float> zero_buffer (input_block.getNumChannels (), offset);
+                zero_buffer.clear ();
+                juce::dsp::AudioBlock<float> zero_block {zero_buffer};
+                REQUIRE_THAT (input_block.getSubBlock (0, offset),
+                              melatonin::isEqualTo (zero_block, 0.00005f));
+                CompareConvolverOutput (input_block.getSubBlock (offset), ir_block);
+
+                break;
+            }
     }
 }
 
-SCENARIO ("Generic Convolver Tests", "[Convolver]")
+TEST_CASE ("UPC Tests", "[Convolver]")
 {
     auto num_ir_channels = GENERATE (1, 2, 3, 4, 5, 6, 7, 8, 10, 100);
     auto block_size = GENERATE (1, 16, 32, 35, 1024, 2000);
@@ -237,7 +243,7 @@ SCENARIO ("Generic Convolver Tests", "[Convolver]")
     }
 }
 
-SCENARIO ("TDNUPC Tests", "[TDNUPC]")
+TEST_CASE ("TDNUPC Tests", "[Convolver]")
 {
     auto num_ir_channels = GENERATE (1, 2, 3, 4);
     auto block_size = GENERATE (13);
@@ -248,5 +254,24 @@ SCENARIO ("TDNUPC Tests", "[TDNUPC]")
     {
         CreateandConvolveIR (
             ConvolverType::TDNUPC, num_ir_channels, num_ir_channels, block_size, ir_length);
+    }
+}
+TEST_CASE ("TDUPCMulti Tests", "[Convolver]")
+{
+    auto num_ir_channels = GENERATE (2);
+    auto block_size = GENERATE (32);
+    auto ir_length = GENERATE (10000);
+    auto partition_size_blocks = GENERATE (4);
+
+    SECTION ("test for:" + std::to_string (num_ir_channels) + "," + std::to_string (block_size) +
+             "," + std::to_string (ir_length))
+    {
+        auto offset = block_size * partition_size_blocks * 2;
+        CreateandConvolveIR (ConvolverType::TDUPCMULTI,
+                             num_ir_channels,
+                             num_ir_channels,
+                             block_size,
+                             ir_length + offset,
+                             partition_size_blocks);
     }
 }

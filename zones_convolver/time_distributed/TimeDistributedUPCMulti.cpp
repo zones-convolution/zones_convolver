@@ -33,6 +33,9 @@ TimeDistributedUPCMulti::TimeDistributedUPCMulti (const juce::dsp::ProcessSpec &
     const auto num_channels = static_cast<int> (spec.numChannels);
     const auto ir_num_channels = static_cast<int> (ir_segment.getNumChannels ());
 
+    // must be at least two because FFT and IFFT are performed on separate phases
+    jassert (partition_size_blocks > 1);
+
     auto partition_size_samples = partition_size_blocks * block_size;
     auto fft_num_points = 2 * partition_size_samples;
     auto filter_size = static_cast<int> (ir_segment.getNumSamples ());
