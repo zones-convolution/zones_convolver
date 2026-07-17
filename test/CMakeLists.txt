@@ -8,7 +8,7 @@ target_sources(unit_tests PRIVATE
         TestUtils.cpp
         DecompositionTestBed.cpp
         ConvolverTests.cpp
-
+        BenchmarkConvolver.cpp
 )
 
 target_link_libraries(unit_tests PRIVATE
