@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <melatonin_audio_sparklines/melatonin_audio_sparklines.h>
 #include <melatonin_test_helpers/melatonin_test_helpers.h>
 #include <zones_convolver/util/ComplexBuffer.h>
 
@@ -6,6 +7,9 @@ using namespace zones;
 
 SCENARIO ("can construct complex buffers with different channel and point sizes", "[ComplexBuffer]")
 {
+    juce::dsp::AudioBlock<float> a;
+    melatonin::printSparkline (a);
+
     GIVEN ("a list of different configurations")
     {
         auto channel_configurations = {0, 1, 2, 3, 4, 8};

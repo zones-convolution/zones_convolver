@@ -1,3 +1,5 @@
+#include "TestUtils.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <melatonin_test_helpers/melatonin_test_helpers.h>
@@ -13,29 +15,13 @@ enum ConvolverType
     TDUPCMULTI
 };
 
-void CompareConvolverOutput (juce::dsp::AudioBlock<float> output_block,
-                             juce::dsp::AudioBlock<float> ir_block)
-{
-    auto num_ir_samples = ir_block.getNumSamples ();
-    REQUIRE_THAT (output_block.getSubBlock (0, num_ir_samples), melatonin::isEqualTo (ir_block));
-    // the rest should be zero but at the moment has a small amount of noise in so
-    // an alternative check with less tolerance is used REQUIRE_THAT (input_block,
-    // melatonin::isEmptyAfter (ir_length_samples));
-
-    juce::AudioBuffer<float> zero_buffer (output_block.getNumChannels (),
-                                          output_block.getNumSamples () - num_ir_samples);
-    zero_buffer.clear ();
-    juce::dsp::AudioBlock<float> zero_block {zero_buffer};
-    REQUIRE_THAT (output_block.getSubBlock (num_ir_samples),
-                  melatonin::isEqualTo (zero_block, 0.00005f));
-}
-
 void CreateandConvolveIR (ConvolverType convolverType,
                           int num_ir_channels,
                           int num_process_channels,
                           int convolver_block_size,
                           int ir_length_samples,
-                          int partition_size_blocks = 2)
+                          int partition_size_blocks = 2,
+                          Convolver::ConvolverSpec convolver_spec = {})
 {
     // create IR block
     juce::AudioBuffer<float> ir;
@@ -43,16 +29,17 @@ void CreateandConvolveIR (ConvolverType convolverType,
     ir.setSize (num_ir_channels, ir_length_samples);
     for (auto channel_index = 0; channel_index < num_ir_channels; ++channel_index)
     {
+        auto channel_bias = (static_cast<float> (static_cast<float> (channel_index) + 1.f) /
+                             (static_cast<float> (num_ir_channels) + 1.f));
         for (auto i = 0; i < ir_length_samples; ++i)
             ir.setSample (
                 channel_index,
                 i,
                 static_cast<float> (
-                    (static_cast<float> (2 * i) / static_cast<float> (ir_length_samples)) - 1.f +
-                    (static_cast<float> (channel_index / num_ir_channels))));
+                    ((static_cast<float> (2 * i) / static_cast<float> (ir_length_samples)) - 1.f) *
+                    channel_bias));
     }
     juce::dsp::AudioBlock<float> ir_block {ir};
-
     // create input buffer
     juce::AudioBuffer<float> input;
     input.setSize (num_process_channels, ir_length_samples * 2);
@@ -149,7 +136,7 @@ void CreateandConvolveIR (ConvolverType convolverType,
             {
                 // prepare convolver
 
-                Convolver convolver {ir_block, spec, Convolver::ConvolverSpec {}};
+                Convolver convolver {ir_block, spec, convolver_spec};
 
                 // process for each block combination
                 for (auto subblock_combination = 0;
@@ -240,6 +227,32 @@ TEST_CASE ("UPC Tests", "[Convolver]")
     {
         CreateandConvolveIR (
             ConvolverType::UPC, num_ir_channels, num_ir_channels, block_size, ir_length);
+    }
+}
+
+TEST_CASE ("Convolver Tests", "[Convolver]")
+{
+    auto num_ir_channels = GENERATE (2);
+    auto block_size = GENERATE (32);
+    auto ir_length = GENERATE (10000);
+    auto input_routing = GENERATE (std::vector<int> ({0, 1, 2, 3, 4, 5, 6}));
+    auto output_routing = GENERATE (std::vector<int> ({0, 1, 2, 3, 4, 5, 6}));
+    auto internal_block_size = GENERATE (32);
+
+    SECTION ("test for:" + std::to_string (num_ir_channels) + "," + std::to_string (block_size) +
+             "," + std::to_string (ir_length))
+    {
+        Convolver::ConvolverSpec convolver_spec = {.input_routing = input_routing,
+                                                   .output_routing = output_routing,
+                                                   .fade_strategy = Convolver::FadeStrategy::kInOut,
+                                                   .internal_block_size = internal_block_size};
+        CreateandConvolveIR (ConvolverType::CONVOLVER,
+                             num_ir_channels,
+                             num_ir_channels,
+                             block_size,
+                             ir_length,
+                             2,
+                             convolver_spec);
     }
 }
 

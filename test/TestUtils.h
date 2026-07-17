@@ -3,3 +3,5 @@
 
 bool ApproximatelyEqualComplex (const std::complex<float> & a, const std::complex<float> & b);
 void BitReverseSwap (std::complex<float> * input, unsigned n);
+void CompareConvolverOutput (juce::dsp::AudioBlock<float> output_block,
+                             juce::dsp::AudioBlock<float> ir_block);
