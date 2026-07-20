@@ -16,6 +16,7 @@ void ForwardFFTUnordered (std::complex<float> * data, std::size_t num_points)
         {
             auto group = &data [group_index * num_elements_in_group];
 
+            std::complex<float> w {1.0f, 0.0f};
             for (auto element_index = 0; element_index < half_num_elements_in_group;
                  ++element_index)
             {
@@ -23,9 +24,8 @@ void ForwardFFTUnordered (std::complex<float> * data, std::size_t num_points)
                 auto point = group [element_index];
 
                 group [element_index] += group [mirrored_index];
-                group [mirrored_index] =
-                    (point - group [mirrored_index]) *
-                    std::pow (w_n, std::complex<float> {static_cast<float> (element_index), 0.0f});
+                group [mirrored_index] = (point - group [mirrored_index]) * w;
+                w *= w_n;
             }
         }
     }
@@ -45,16 +45,16 @@ void InverseFFTUnordered (std::complex<float> * data, std::size_t num_points)
         {
             auto group = &data [group_index * num_elements_in_group];
 
+            std::complex<float> w {1.0f, 0.0f};
             for (auto element_index = 0; element_index < half_num_elements_in_group;
                  ++element_index)
             {
                 auto mirrored_index = element_index + half_num_elements_in_group;
-                auto b_n =
-                    group [mirrored_index] *
-                    std::pow (w_n, std::complex<float> {static_cast<float> (element_index), 0.0f});
+                auto b_n = group [mirrored_index] * w;
 
                 group [mirrored_index] = (group [element_index] - b_n) * 0.5f;
                 group [element_index] = (group [element_index] + b_n) * 0.5f;
+                w *= w_n;
             }
         }
     }

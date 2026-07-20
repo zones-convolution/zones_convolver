@@ -3,10 +3,10 @@
 namespace zones
 {
 void fft_decomposition::SegmentedForwardDecompositionRadix2 (std::complex<float> * data,
-                                                            std::size_t num_points,
-                                                            std::size_t num_segments,
-                                                            std::size_t num_steps,
-                                                            std::size_t current_step)
+                                                             std::size_t num_points,
+                                                             std::size_t num_segments,
+                                                             std::size_t num_steps,
+                                                             std::size_t current_step)
 {
     jassert (num_segments > 0 && juce::isPowerOfTwo (num_segments));
     jassert (num_points > 0 && juce::isPowerOfTwo (num_points));
@@ -23,6 +23,8 @@ void fft_decomposition::SegmentedForwardDecompositionRadix2 (std::complex<float>
     for (auto segment_index = 0; segment_index < num_segments; ++segment_index)
     {
         auto segment = &data [segment_index * segment_num_points];
+
+        auto w = std::pow (w_n, std::complex<float> {static_cast<float> (start_index), 0.0f});
         for (auto point_index = start_index; point_index < start_index + step_size; ++point_index)
         {
             jassert (half_num_points + point_index < segment_num_points);
@@ -30,17 +32,17 @@ void fft_decomposition::SegmentedForwardDecompositionRadix2 (std::complex<float>
 
             segment [point_index] += segment [half_num_points + point_index];
             segment [half_num_points + point_index] =
-                (point - segment [half_num_points + point_index]) *
-                std::pow (w_n, std::complex<float> {static_cast<float> (point_index), 0.0f});
+                (point - segment [half_num_points + point_index]) * w;
+            w *= w_n;
         }
     }
 }
 
 void fft_decomposition::SegmentedInverseDecompositionRadix2 (std::complex<float> * data,
-                                                            std::size_t num_points,
-                                                            std::size_t num_segments,
-                                                            std::size_t num_steps,
-                                                            std::size_t current_step)
+                                                             std::size_t num_points,
+                                                             std::size_t num_segments,
+                                                             std::size_t num_steps,
+                                                             std::size_t current_step)
 {
     jassert (num_segments > 0 && juce::isPowerOfTwo (num_segments));
     jassert (num_points > 0 && juce::isPowerOfTwo (num_points));
@@ -57,14 +59,17 @@ void fft_decomposition::SegmentedInverseDecompositionRadix2 (std::complex<float>
     for (auto segment_index = 0; segment_index < num_segments; ++segment_index)
     {
         auto segment = &data [segment_index * segment_num_points];
+
+        auto w = std::pow (w_n, std::complex<float> {static_cast<float> (start_index), 0.0f});
         for (auto point_index = start_index; point_index < start_index + step_size; ++point_index)
         {
             jassert (half_num_points + point_index < segment_num_points);
-            auto b_n = segment [point_index + half_num_points] *
-                       std::pow (w_n, std::complex<float> {static_cast<float> (point_index), 0.0f});
+
+            auto b_n = segment [point_index + half_num_points] * w;
 
             segment [half_num_points + point_index] = (segment [point_index] - b_n) * 0.5f;
             segment [point_index] = (segment [point_index] + b_n) * 0.5f;
+            w *= w_n;
         }
     }
 }
