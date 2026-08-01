@@ -18,6 +18,8 @@ END_JUCE_MODULE_DECLARATION
 #include "Convolver.h"
 #include "PartitionSchemes.h"
 #include "UniformPartitionedConvolver.h"
+#include "multi_threaded/MultiThreadedNUPC.h"
+#include "multi_threaded/UPCWorker.h"
 #include "time_distributed/TimeDistributedNUPC.h"
 #include "time_distributed/TimeDistributedUPC.h"
 #include "time_distributed/TimeDistributedUPCMulti.h"

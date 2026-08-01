@@ -4,6 +4,8 @@
 #include "Convolver.cpp"
 #include "PartitionSchemes.cpp"
 #include "UniformPartitionedConvolver.cpp"
+#include "multi_threaded/MultiThreadedNUPC.h"
+#include "multi_threaded/UPCWorker.cpp"
 #include "time_distributed/TimeDistributedNUPC.cpp"
 #include "time_distributed/TimeDistributedUPC.cpp"
 #include "time_distributed/TimeDistributedUPCMulti.cpp"
