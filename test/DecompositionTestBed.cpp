@@ -181,10 +181,11 @@ TEST_CASE ("decomposing a 16b partition")
                         auto sub_fft_data =
                             &stage_b->GetWritePointer (0) [relative_phase * sub_fft_size];
 
+                        FFTUnordered fft_sub = FFTUnordered (sub_fft_size);
                         if (phase < half_num_phases)
-                            ForwardFFTUnordered (sub_fft_data, sub_fft_size);
+                            fft_sub.Forward (sub_fft_data, sub_fft_size);
                         else
-                            InverseFFTUnordered (sub_fft_data, sub_fft_size);
+                            fft_sub.Inverse (sub_fft_data, sub_fft_size);
 
                         // When completed forward FFT'S check they match inputs
                         if (phase == half_num_phases - 1)
@@ -194,7 +195,8 @@ TEST_CASE ("decomposing a 16b partition")
 
                             test_fft_data.CopyFromAudioBlock (input_buffer);
                             auto test_fft_data_ptr = test_fft_data.GetWritePointer (0);
-                            ForwardFFTUnordered (test_fft_data_ptr, kFFTSize);
+                            FFTUnordered fft_test = FFTUnordered (kFFTSize);
+                            fft_test.Forward (test_fft_data_ptr, kFFTSize);
 
                             auto stage_b = stage_buffers.GetStage (StageBuffers::StageBuffer::kB);
                             auto stage_b_ptr = stage_b->GetWritePointer (0);
@@ -212,8 +214,9 @@ TEST_CASE ("decomposing a 16b partition")
                     test_fft_data.Clear ();
                     test_fft_data.CopyFromAudioBlock (input_buffer);
                     auto test_fft_data_ptr = test_fft_data.GetWritePointer (0);
-                    ForwardFFTUnordered (test_fft_data_ptr, kFFTSize);
-                    InverseFFTUnordered (test_fft_data_ptr, kFFTSize);
+                    FFTUnordered fft_test = FFTUnordered (kFFTSize);
+                    fft_test.Forward (test_fft_data_ptr, kFFTSize);
+                    fft_test.Inverse (test_fft_data_ptr, kFFTSize);
 
                     auto stage_c = stage_buffers.GetStage (StageBuffers::StageBuffer::kC);
                     auto stage_c_ptr = stage_c->GetWritePointer (0);
@@ -254,7 +257,8 @@ TEST_CASE ("decomposing a 16b partition with conv")
     ComplexBuffer transformed_ir {kFFTSize, 1};
     transformed_ir.Clear ();
     transformed_ir.CopyFromAudioBlock (ir_buffer);
-    ForwardFFTUnordered (transformed_ir.GetWritePointer (0), kFFTSize);
+    FFTUnordered fft_ir = FFTUnordered (kFFTSize);
+    fft_ir.Forward (transformed_ir.GetWritePointer (0), kFFTSize);
     auto transformed_ir_ptr = transformed_ir.GetWritePointer (0);
 
     juce::dsp::ProcessSpec spec {44100, kInputSize, 1};
@@ -285,11 +289,13 @@ TEST_CASE ("decomposing a 16b partition with conv")
                         auto stage_b_ptr = stage_b->GetWritePointer (0);
                         auto sub_fft_size =
                             kFFTSize / (static_cast<int> (std::pow (2, num_decompositions)));
+                        FFTUnordered fft_data = FFTUnordered (sub_fft_size);
 
                         if (phase % 2 == 0)
                         {
                             auto sub_fft_data = &stage_b_ptr [(phase / 2) * sub_fft_size];
-                            ForwardFFTUnordered (sub_fft_data, sub_fft_size);
+
+                            fft_data.Forward (sub_fft_data, sub_fft_size);
                         }
 
                         auto half_sub_fft_size = sub_fft_size / 2;
@@ -305,7 +311,7 @@ TEST_CASE ("decomposing a 16b partition with conv")
                         if (phase % 2 != 0)
                         {
                             auto sub_fft_data = &stage_b_ptr [((phase - 1) / 2) * sub_fft_size];
-                            InverseFFTUnordered (sub_fft_data, sub_fft_size);
+                            fft_data.Inverse (sub_fft_data, sub_fft_size);
                         }
                     }
                     break;

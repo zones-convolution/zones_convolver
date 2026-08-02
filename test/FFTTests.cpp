@@ -24,7 +24,8 @@ TEST_CASE ("completes forward FFT", "[ForwardFFTUnordered]")
         auto juce_fft = juce::dsp::FFT {fft_order};
         juce_fft.perform (zones_fft_channel, juce_fft_channel, false);
 
-        ForwardFFTUnordered (zones_fft_channel, num_points);
+        FFTUnordered fft = FFTUnordered (num_points);
+        fft.Forward (zones_fft_channel, num_points);
 
         /**
          * JUCE FFT performs DIT, to ensure points within each output have the same order a bit
@@ -61,7 +62,8 @@ TEST_CASE ("completes inverse FFT", "[InverseFFTUnordered]")
          */
         BitReverseSwap (zones_fft_channel, num_points);
 
-        InverseFFTUnordered (zones_fft_channel, num_points);
+        FFTUnordered fft = FFTUnordered (num_points);
+        fft.Inverse (zones_fft_channel, num_points);
 
         for (auto point_index = 0u; point_index < num_points; ++point_index)
             REQUIRE (ApproximatelyEqualComplex (zones_fft_channel [point_index],

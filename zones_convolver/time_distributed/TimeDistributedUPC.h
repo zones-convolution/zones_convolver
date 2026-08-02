@@ -1,5 +1,7 @@
 #pragma once
 
+#include "zones_convolver/util/FFT.h"
+
 #include <juce_dsp/juce_dsp.h>
 #include <zones_convolver/util/ComplexBuffer.h>
 #include <zones_convolver/util/DecompositionSchedule.h>
@@ -30,10 +32,18 @@ private:
     int num_partitions_;
     int transform_offset_;
 
+    int num_ffts_;
+    int num_active_phases_;
+    int sub_fft_size_;
+    int half_sub_fft_size_;
+
     const std::vector<ComplexBuffer> & filter_partitions_;
     int filter_channel_;
     std::unique_ptr<FrequencyDelayLine> frequency_delay_line_;
     std::unique_ptr<StageBuffers> stage_buffers_;
     juce::AudioBuffer<float> previous_tail_;
+
+    std::unique_ptr<zones::DecompositionSchedule> decomposition_schedule_;
+    std::unique_ptr<zones::FFTUnordered> fft_;
 };
 }

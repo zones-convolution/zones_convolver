@@ -38,40 +38,72 @@ void StageBuffers::Clear ()
         stage.Clear ();
 }
 
-void decomposition_schedule::ForwardDecompositionSchedule (int num_decompositions,
-                                                          int fft_size,
-                                                          int num_blocks,
-                                                          std::complex<float> * data,
-                                                          int phase)
+DecompositionSchedule::DecompositionSchedule (int num_decompositions,
+                                              int fft_num_points,
+                                              int num_phases)
+    : num_decompositions_ (num_decompositions)
+    , fft_num_points_ (fft_num_points)
+    , num_phases_ (num_phases)
 {
-    for (auto decomposition_level = 0; decomposition_level < num_decompositions;
-         ++decomposition_level)
+    auto num_depths = static_cast<int> (std::log2 (fft_num_points));
+
+    forward_twiddle_factors_.resize (num_depths);
+    inverse_twiddle_factors_.resize (num_depths);
+
+    for (auto depth = num_depths; depth > 0; --depth)
     {
-        auto num_segments = static_cast<int> (std::pow (2, decomposition_level));
-        auto num_steps = num_blocks / num_segments;
-        if (phase >= num_blocks - num_steps)
+        auto num_elements_in_group = static_cast<int> (std::pow (2, depth));
+        auto half_num_elements_in_group = num_elements_in_group / 2;
+
+        auto & forward_twiddle_group = forward_twiddle_factors_ [depth - 1];
+        forward_twiddle_group.resize (half_num_elements_in_group);
+        auto & inverse_twiddle_group = inverse_twiddle_factors_ [depth - 1];
+        inverse_twiddle_group.resize (half_num_elements_in_group);
+
+        for (auto element_index = 0; element_index < half_num_elements_in_group; ++element_index)
         {
-            auto relative_phase = phase % num_steps;
-            fft_decomposition::SegmentedForwardDecompositionRadix2 (
-                data, fft_size, num_segments, num_steps, relative_phase);
+            forward_twiddle_group [element_index] = std::exp (std::complex<float> (
+                0.0f,
+                -juce::MathConstants<float>::twoPi * static_cast<float> (element_index) /
+                    static_cast<float> (num_elements_in_group)));
+            inverse_twiddle_group [element_index] = std::exp (std::complex<float> (
+                0.0f,
+                juce::MathConstants<float>::twoPi * static_cast<float> (element_index) /
+                    static_cast<float> (num_elements_in_group)));
         }
     }
 }
 
-void decomposition_schedule::InverseDecompositionSchedule (int num_decompositions,
-                                                          int fft_size,
-                                                          int num_blocks,
-                                                          std::complex<float> * data,
-                                                          int phase)
+void DecompositionSchedule::Forward (std::complex<float> * data, int phase)
 {
-    for (auto decomposition_level = num_decompositions - 1; decomposition_level >= 0;
+    for (auto decomposition_level = 0; decomposition_level < num_decompositions_;
+         ++decomposition_level)
+    {
+        auto num_segments = static_cast<int> (std::pow (2, decomposition_level));
+        auto num_steps = num_phases_ / num_segments;
+        if (phase >= num_phases_ - num_steps)
+        {
+            auto relative_phase = phase % num_steps;
+            fft_decomposition::SegmentedForwardDecompositionRadix2 (data,
+                                                                    fft_num_points_,
+                                                                    num_segments,
+                                                                    num_steps,
+                                                                    relative_phase,
+                                                                    forward_twiddle_factors_);
+        }
+    }
+}
+
+void DecompositionSchedule::Inverse (std::complex<float> * data, int phase)
+{
+    for (auto decomposition_level = num_decompositions_ + -1; decomposition_level >= 0;
          --decomposition_level)
     {
         auto num_segments = static_cast<int> (std::pow (2, decomposition_level));
-        auto num_steps = num_blocks / num_segments;
+        auto num_steps = num_phases_ / num_segments;
         if (phase < num_steps)
             fft_decomposition::SegmentedInverseDecompositionRadix2 (
-                data, fft_size, num_segments, num_steps, phase);
+                data, fft_num_points_, num_segments, num_steps, phase, inverse_twiddle_factors_);
     }
 }
 }

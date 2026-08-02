@@ -234,7 +234,7 @@ TEST_CASE ("Convolver Tests", "[Convolver]")
 {
     auto num_ir_channels = GENERATE (2);
     auto block_size = GENERATE (32);
-    auto ir_length = GENERATE (10000);
+    auto ir_length = GENERATE (8000);
     auto input_routing = GENERATE (std::vector<int> ({0, 1, 2, 3, 4, 5, 6}));
     auto output_routing = GENERATE (std::vector<int> ({0, 1, 2, 3, 4, 5, 6}));
     auto internal_block_size = GENERATE (32);

@@ -27,6 +27,15 @@ TimeDistributedUPC::TimeDistributedUPC (const juce::dsp::ProcessSpec & spec,
         std::make_unique<FrequencyDelayLine> (1, num_partitions_, fft_num_points_);
     previous_tail_.setSize (1, partition_size_samples);
 
+    num_ffts_ = (static_cast<int> (std::pow (2, num_decompositions_)));
+    num_active_phases_ = num_ffts_ * 2;
+    sub_fft_size_ = fft_num_points_ / num_ffts_;
+    half_sub_fft_size_ = sub_fft_size_ / 2;
+
+    decomposition_schedule_ =
+        std::make_unique<DecompositionSchedule> (num_decompositions_, fft_num_points_, num_phases_);
+    fft_ = std::make_unique<zones::FFTUnordered> (sub_fft_size_);
+
     Reset ();
 }
 
@@ -50,28 +59,22 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
         stage_a [(phase_ * block_size) + sample_index] =
             std::complex<float> {output_block.getSample (0, sample_index), 0.f};
 
-    decomposition_schedule::ForwardDecompositionSchedule (
-        num_decompositions_, fft_num_points_, num_phases_, stage_a, phase_);
+    decomposition_schedule_->Forward (stage_a, phase_);
 
     auto stage_b = stage_buffers_->GetStage (StageBuffers::StageBuffer::kB)->GetWritePointer (0);
 
-    auto num_ffts = (static_cast<int> (std::pow (2, num_decompositions_)));
-    auto num_active_phases = num_ffts * 2;
-    auto sub_fft_size = fft_num_points_ / num_ffts;
-    auto half_sub_fft_size = sub_fft_size / 2;
-
-    if (phase_ >= transform_offset_ && phase_ < transform_offset_ + num_active_phases)
+    if (phase_ >= transform_offset_ && phase_ < transform_offset_ + num_active_phases_)
     {
         auto working_phase = phase_ - transform_offset_;
-        auto offset = working_phase * half_sub_fft_size;
+        auto offset = working_phase * half_sub_fft_size_;
 
         if (working_phase % 2 == 0)
         {
             auto sub_fft_data = &stage_b [offset];
-            ForwardFFTUnordered (sub_fft_data, sub_fft_size);
+            fft_->Forward (sub_fft_data, sub_fft_size_);
 
             auto first_fdl = frequency_delay_line_->GetBlockWithOffset (0).GetWritePointer (0);
-            for (auto point_index = 0; point_index < sub_fft_size; ++point_index)
+            for (auto point_index = 0; point_index < sub_fft_size_; ++point_index)
             {
                 first_fdl [offset + point_index] = sub_fft_data [point_index];
                 sub_fft_data [point_index] = {0.f, 0.f};
@@ -84,7 +87,7 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
                 frequency_delay_line_->GetBlockWithOffset (fdl_index).GetReadPointer (0);
             auto filter = filter_partitions_ [fdl_index].GetReadPointer (filter_channel_);
 
-            for (auto point_index = 0; point_index < half_sub_fft_size; ++point_index)
+            for (auto point_index = 0; point_index < half_sub_fft_size_; ++point_index)
             {
                 auto absolute_point = offset + point_index;
                 stage_b [absolute_point] += fdl_block [absolute_point] * filter [absolute_point];
@@ -93,14 +96,13 @@ void TimeDistributedUPC::Process (const juce::dsp::ProcessContextReplacing<float
 
         if (working_phase % 2 != 0)
         {
-            auto sub_fft_data = &stage_b [((working_phase - 1) / 2) * sub_fft_size];
-            InverseFFTUnordered (sub_fft_data, sub_fft_size);
+            auto sub_fft_data = &stage_b [((working_phase - 1) / 2) * sub_fft_size_];
+            fft_->Inverse (sub_fft_data, sub_fft_size_);
         }
     }
 
     auto stage_c = stage_buffers_->GetStage (StageBuffers::StageBuffer::kC)->GetWritePointer (0);
-    decomposition_schedule::InverseDecompositionSchedule (
-        num_decompositions_, fft_num_points_, num_phases_, stage_c, phase_);
+    decomposition_schedule_->Inverse (stage_c, phase_);
 
     auto stage_position = phase_ * block_size;
     auto previous_tail = previous_tail_.getWritePointer (0);

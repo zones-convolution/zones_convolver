@@ -24,17 +24,20 @@ private:
     std::vector<ComplexBuffer> stages_;
 };
 
-namespace decomposition_schedule
+class DecompositionSchedule
 {
-void ForwardDecompositionSchedule (int num_decompositions,
-                                   int fft_size,
-                                   int num_blocks,
-                                   std::complex<float> * data,
-                                   int phase);
-void InverseDecompositionSchedule (int num_decompositions,
-                                   int fft_size,
-                                   int num_blocks,
-                                   std::complex<float> * data,
-                                   int phase);
-}
+public:
+    DecompositionSchedule (int num_decompositions, int fft_num_points, int num_phases);
+
+    void Forward (std::complex<float> * data, int phase);
+    void Inverse (std::complex<float> * data, int phase);
+
+private:
+    int num_decompositions_;
+    int fft_num_points_;
+    int num_phases_;
+
+    std::vector<std::vector<std::complex<float>>> forward_twiddle_factors_;
+    std::vector<std::vector<std::complex<float>>> inverse_twiddle_factors_;
+};
 }

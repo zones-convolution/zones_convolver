@@ -41,6 +41,8 @@ TimeDistributedUPCMulti::TimeDistributedUPCMulti (const juce::dsp::ProcessSpec &
     auto filter_size = static_cast<int> (ir_segment.getNumSamples ());
     auto num_partitions = GetNumPartitionsRequiredForSegment (partition_size_samples, filter_size);
 
+    auto ir_fft = zones::FFTUnordered (fft_num_points);
+
     for (auto partition_index = 0; partition_index < num_partitions; ++partition_index)
     {
         auto offset = partition_index * partition_size_samples;
@@ -52,7 +54,7 @@ TimeDistributedUPCMulti::TimeDistributedUPCMulti (const juce::dsp::ProcessSpec &
         filter_partition.CopyFromAudioBlock (filter_partition_block);
 
         for (auto channel_index = 0; channel_index < ir_num_channels; ++channel_index)
-            ForwardFFTUnordered (filter_partition.GetWritePointer (channel_index), fft_num_points);
+            ir_fft.Forward (filter_partition.GetWritePointer (channel_index), fft_num_points);
 
         filter_partitions_.emplace_back (std::move (filter_partition));
     }
