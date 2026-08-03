@@ -96,14 +96,6 @@ TEST_CASE ("changing step size does not affect segmented forward decomposition o
         for (auto step_size_index = 0u; step_size_index < num_step_sizes - 1; ++step_size_index)
             for (auto point_index = 0u; point_index < num_points; ++point_index)
             {
-                std::cout << inputs.GetReadPointer (step_size_index) [point_index] << std::endl;
-                INFO ("point index " << point_index);
-                INFO ("num points " << num_points);
-                INFO ("step size index" << step_size_index);
-                INFO ("input" << inputs.GetReadPointer (step_size_index) [point_index]);
-                INFO ("output" << inputs.GetReadPointer (step_size_index + 1u) [point_index]);
-
-                // if (point_index != 24 && num_points != 32 && step_size_index != 3)
                 REQUIRE (ApproximatelyEqualComplex (
                     inputs.GetReadPointer (step_size_index) [point_index],
                     inputs.GetReadPointer (step_size_index + 1u) [point_index]));

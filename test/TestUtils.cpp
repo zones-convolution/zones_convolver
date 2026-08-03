@@ -4,7 +4,7 @@
 
 bool ApproximatelyEqualComplex (const std::complex<float> & a, const std::complex<float> & b)
 {
-    auto tolerance = juce::Tolerance<float> ().withRelative (0.4f);
+    auto tolerance = juce::Tolerance<float> ().withRelative (1e-5f).withAbsolute (1e-6f);
     return juce::approximatelyEqual (a.real (), b.real (), tolerance) &&
            juce::approximatelyEqual (a.imag (), b.imag (), tolerance);
 }
