@@ -22,16 +22,18 @@ FFTUnordered::FFTUnordered (std::size_t num_points)
         auto & inverse_twiddle_group = inverse_twiddle_factors_ [depth - 1];
         inverse_twiddle_group.resize (half_num_elements_in_group);
 
+        const double angle_step =
+            2.0 * juce::MathConstants<double>::pi / static_cast<double> (num_elements_in_group);
+
         for (auto element_index = 0; element_index < half_num_elements_in_group; ++element_index)
         {
-            forward_twiddle_group [element_index] = std::exp (std::complex<float> (
-                0.0f,
-                -juce::MathConstants<float>::twoPi * static_cast<float> (element_index) /
-                    static_cast<float> (num_elements_in_group)));
-            inverse_twiddle_group [element_index] = std::exp (std::complex<float> (
-                0.0f,
-                juce::MathConstants<float>::twoPi * static_cast<float> (element_index) /
-                    static_cast<float> (num_elements_in_group)));
+            const double angle = angle_step * static_cast<double> (element_index);
+
+            forward_twiddle_group [element_index] = std::complex<float> (
+                static_cast<float> (std::cos (angle)), static_cast<float> (-std::sin (angle)));
+
+            inverse_twiddle_group [element_index] = std::complex<float> (
+                static_cast<float> (std::cos (angle)), static_cast<float> (std::sin (angle)));
         }
     }
 }
