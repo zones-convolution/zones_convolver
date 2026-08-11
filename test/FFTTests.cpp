@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
+#include <random>
 #include <zones_convolver/util/ComplexBuffer.h>
 #include <zones_convolver/util/FFT.h>
 
@@ -17,8 +18,11 @@ TEST_CASE ("completes forward FFT", "[ForwardFFTUnordered]")
         auto zones_fft_channel = input.GetWritePointer (0);
         auto juce_fft_channel = input.GetWritePointer (1);
 
+        std::mt19937 rng {123};
+        std::uniform_real_distribution<float> distribution {-1.0f, 1.0f};
+
         for (auto point_index = 0u; point_index < num_points; ++point_index)
-            zones_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+            zones_fft_channel [point_index] = {distribution (rng), distribution (rng)};
 
         auto fft_order = static_cast<int> (std::log2 (num_points));
         auto juce_fft = juce::dsp::FFT {fft_order};
@@ -49,9 +53,11 @@ TEST_CASE ("completes inverse FFT", "[InverseFFTUnordered]")
         auto zones_fft_channel = input.GetWritePointer (0);
         auto juce_fft_channel = input.GetWritePointer (1);
 
-        for (auto point_index = 0u; point_index < num_points; ++point_index)
-            zones_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+        std::mt19937 rng {123};
+        std::uniform_real_distribution<float> distribution {-1.0f, 1.0f};
 
+        for (auto point_index = 0u; point_index < num_points; ++point_index)
+            zones_fft_channel [point_index] = {distribution (rng), distribution (rng)};
         auto fft_order = static_cast<int> (std::log2 (num_points));
         auto juce_fft = juce::dsp::FFT {fft_order};
         juce_fft.perform (zones_fft_channel, juce_fft_channel, true);

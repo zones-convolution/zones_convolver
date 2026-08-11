@@ -1,8 +1,8 @@
 #include "TestUtils.h"
-#include "builds/ninja-multi/_deps/catch2-src/src/catch2/internal/catch_stdstreams.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
+#include <random>
 #include <zones_convolver/util/ComplexBuffer.h>
 #include <zones_convolver/util/FFT.h>
 #include <zones_convolver/util/FFTDecomposition.h>
@@ -32,38 +32,53 @@ CreateTwiddleFactors (auto fft_num_points)
         auto & inverse_twiddle_group = inverse_twiddle_factors [depth - 1];
         inverse_twiddle_group.resize (half_num_elements_in_group);
 
+        const double angle_step =
+            2.0 * juce::MathConstants<double>::pi / static_cast<double> (num_elements_in_group);
+
         for (auto element_index = 0; element_index < half_num_elements_in_group; ++element_index)
         {
-            forward_twiddle_group [element_index] = std::exp (std::complex<float> (
-                0.0f,
-                -juce::MathConstants<float>::twoPi * static_cast<float> (element_index) /
-                    static_cast<float> (num_elements_in_group)));
-            inverse_twiddle_group [element_index] = std::exp (std::complex<float> (
-                0.0f,
-                juce::MathConstants<float>::twoPi * static_cast<float> (element_index) /
-                    static_cast<float> (num_elements_in_group)));
+            const double angle = angle_step * static_cast<double> (element_index);
+
+            forward_twiddle_group [element_index] = std::complex<float> (
+                static_cast<float> (std::cos (angle)), static_cast<float> (-std::sin (angle)));
+
+            inverse_twiddle_group [element_index] = std::complex<float> (
+                static_cast<float> (std::cos (angle)), static_cast<float> (std::sin (angle)));
         }
     }
     return twiddle_factors;
+}
+static std::vector<std::complex<double>> ReferenceDFT (const std::complex<float> * input,
+                                                       std::size_t num_points)
+{
+    std::vector<std::complex<double>> output (num_points);
+
+    const double two_pi = 2.0 * juce::MathConstants<double>::pi;
+
+    for (std::size_t k = 0; k < num_points; ++k)
+    {
+        std::complex<double> sum {0.0, 0.0};
+
+        for (std::size_t n = 0; n < num_points; ++n)
+        {
+            const double angle = -two_pi * static_cast<double> (k) * static_cast<double> (n) /
+                                 static_cast<double> (num_points);
+
+            const std::complex<double> twiddle {std::cos (angle), std::sin (angle)};
+
+            sum += static_cast<std::complex<double>> (input [n]) * twiddle;
+        }
+
+        output [k] = sum;
+    }
+
+    return output;
 }
 
 TEST_CASE ("changing step size does not affect segmented forward decomposition output",
            "[SegmentedForwardDecompositionRadix2]")
 {
-    auto w_n = std::exp (
-        std::complex<float> (0.0f, -juce::MathConstants<float>::twoPi / static_cast<float> (32)));
-    auto w = std::pow (w_n, std::complex<float> {static_cast<float> (0), 0.0f});
-    std::cout << "w_n = " << w_n << std::endl;
-    for (auto i = 0u; i < 32u; ++i)
-    {
-        std::cout << w << std::endl;
-        std::cout << std::pow (w_n, std::complex<float> {static_cast<float> (i), 0.0f})
-                  << std::endl;
-        w *= w_n;
-    }
-
-    // for (auto num_points : {8u, 16u, 32u, 64u, 128u})
-    for (auto num_points : {32u})
+    for (auto num_points : {8u, 16u, 32u, 64u, 128u})
     {
         auto num_step_sizes = static_cast<std::size_t> (std::log2 (num_points));
         ComplexBuffer inputs {num_points, num_step_sizes};
@@ -92,7 +107,6 @@ TEST_CASE ("changing step size does not affect segmented forward decomposition o
                     twiddle_factors [0]);
         }
 
-        std::cout << "inputs=====" << std::endl;
         for (auto step_size_index = 0u; step_size_index < num_step_sizes - 1; ++step_size_index)
             for (auto point_index = 0u; point_index < num_points; ++point_index)
             {
@@ -113,8 +127,11 @@ TEST_CASE ("completes segmented decomposed FFT", "[SegmentedForwardDecomposition
         auto decomposed_fft_channel = input.GetWritePointer (0);
         auto juce_fft_channel = input.GetWritePointer (1);
 
+        std::mt19937 rng {123};
+        std::uniform_real_distribution<float> distribution {-1.0f, 1.0f};
+
         for (auto point_index = 0u; point_index < num_points; ++point_index)
-            decomposed_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+            decomposed_fft_channel [point_index] = {distribution (rng), distribution (rng)};
 
         auto fft_order = static_cast<int> (std::log2 (num_points));
         auto juce_fft = juce::dsp::FFT {fft_order};
@@ -159,8 +176,11 @@ TEST_CASE ("segmented decomposed FFT followed by unordered FFT",
         auto decomposed_fft_channel = input.GetWritePointer (0);
         auto juce_fft_channel = input.GetWritePointer (1);
 
+        std::mt19937 rng {123};
+        std::uniform_real_distribution<float> distribution {-1.0f, 1.0f};
+
         for (auto point_index = 0u; point_index < num_points; ++point_index)
-            decomposed_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+            decomposed_fft_channel [point_index] = {distribution (rng), distribution (rng)};
 
         auto fft_order = static_cast<int> (std::log2 (num_points));
         auto juce_fft = juce::dsp::FFT {fft_order};
@@ -247,7 +267,7 @@ TEST_CASE ("changing step size does not affect segmented inverse decomposition o
 
 TEST_CASE ("completes segmented inverse decomposed FFT", "[SegmentedInverseDecompositionRadix2]")
 {
-    for (auto num_points : {8u, 16u, 32u, 64u, 128u})
+    for (auto num_points : {8u, 16u, 32u, 64u, 128u, 1024u})
     {
         ComplexBuffer input {num_points, 2};
         input.Clear ();
@@ -255,8 +275,11 @@ TEST_CASE ("completes segmented inverse decomposed FFT", "[SegmentedInverseDecom
         auto decomposed_fft_channel = input.GetWritePointer (0);
         auto juce_fft_channel = input.GetWritePointer (1);
 
+        std::mt19937 rng {123};
+        std::uniform_real_distribution<float> distribution {-1.0f, 1.0f};
+
         for (auto point_index = 0u; point_index < num_points; ++point_index)
-            decomposed_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+            decomposed_fft_channel [point_index] = {distribution (rng), distribution (rng)};
 
         auto fft_order = static_cast<int> (std::log2 (num_points));
         auto juce_fft = juce::dsp::FFT {fft_order};
@@ -293,7 +316,7 @@ TEST_CASE ("completes segmented inverse decomposed FFT", "[SegmentedInverseDecom
 TEST_CASE ("completes segmented inverse followed by unordered iFFT",
            "[SegmentedInverseDecompositionRadix2]")
 {
-    for (auto num_points : {32u, 64u, 128u})
+    for (auto num_points : {32u, 64u, 128u, 1024u})
     {
         ComplexBuffer input {num_points, 2};
         input.Clear ();
@@ -301,8 +324,11 @@ TEST_CASE ("completes segmented inverse followed by unordered iFFT",
         auto decomposed_fft_channel = input.GetWritePointer (0);
         auto juce_fft_channel = input.GetWritePointer (1);
 
+        std::mt19937 rng {123};
+        std::uniform_real_distribution<float> distribution {-1.0f, 1.0f};
+
         for (auto point_index = 0u; point_index < num_points; ++point_index)
-            decomposed_fft_channel [point_index] = {static_cast<float> (point_index) + 1.f, 0.f};
+            decomposed_fft_channel [point_index] = {distribution (rng), distribution (rng)};
 
         auto fft_order = static_cast<int> (std::log2 (num_points));
         auto juce_fft = juce::dsp::FFT {fft_order};
@@ -320,7 +346,7 @@ TEST_CASE ("completes segmented inverse followed by unordered iFFT",
             static_cast<std::size_t> (std::pow (2, num_decomposition_layers));
         auto sub_fft_size = num_points / num_sub_decompositions;
 
-        FFTUnordered fft = FFTUnordered (num_points);
+        FFTUnordered fft = FFTUnordered (sub_fft_size);
         for (auto sub_decomposition_index = 0; sub_decomposition_index < num_sub_decompositions;
              ++sub_decomposition_index)
             fft.Inverse (&decomposed_fft_channel [sub_decomposition_index * sub_fft_size],
