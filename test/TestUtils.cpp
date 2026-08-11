@@ -52,3 +52,43 @@ void CompareConvolverOutput (juce::dsp::AudioBlock<float> output_block,
     REQUIRE_THAT (output_block.getSubBlock (num_ir_samples),
                   melatonin::isEqualTo (zero_block, 0.0005f));
 }
+
+std::vector<std::vector<std::vector<std::complex<float>>>>
+CreateTwiddleFactors (unsigned fft_num_points)
+{
+    auto num_depths = static_cast<int> (std::log2 (fft_num_points));
+
+    std::vector<std::vector<std::vector<std::complex<float>>>> twiddle_factors (2);
+
+    auto & forward_twiddle_factors = twiddle_factors [0];
+    auto & inverse_twiddle_factors = twiddle_factors [1];
+
+    forward_twiddle_factors.resize (num_depths);
+    inverse_twiddle_factors.resize (num_depths);
+
+    for (auto depth = num_depths; depth > 0; --depth)
+    {
+        auto num_elements_in_group = static_cast<int> (std::pow (2, depth));
+        auto half_num_elements_in_group = num_elements_in_group / 2;
+
+        auto & forward_twiddle_group = forward_twiddle_factors [depth - 1];
+        forward_twiddle_group.resize (half_num_elements_in_group);
+        auto & inverse_twiddle_group = inverse_twiddle_factors [depth - 1];
+        inverse_twiddle_group.resize (half_num_elements_in_group);
+
+        const double angle_step =
+            2.0 * juce::MathConstants<double>::pi / static_cast<double> (num_elements_in_group);
+
+        for (auto element_index = 0; element_index < half_num_elements_in_group; ++element_index)
+        {
+            const double angle = angle_step * static_cast<double> (element_index);
+
+            forward_twiddle_group [element_index] = std::complex<float> (
+                static_cast<float> (std::cos (angle)), static_cast<float> (-std::sin (angle)));
+
+            inverse_twiddle_group [element_index] = std::complex<float> (
+                static_cast<float> (std::cos (angle)), static_cast<float> (std::sin (angle)));
+        }
+    }
+    return twiddle_factors;
+}

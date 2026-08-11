@@ -5,10 +5,12 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <juce_dsp/juce_dsp.h>
+#include <random>
+#include <zones_convolver/util/FFTDecomposition.h>
 
 using namespace zones;
 
-static constexpr auto kBlockSize = 128;
+static constexpr auto kBlockSize = 1024;
 static constexpr auto kNumBlocks = 64;
 
 static constexpr auto kInputSize = kBlockSize * kNumBlocks;
@@ -17,10 +19,12 @@ static constexpr auto kFFTSize = kInputSize * 2;
 juce::AudioBuffer<float> CreateInputBuffer (int input_size)
 {
     juce::AudioBuffer<float> input_buffer {1, input_size};
-    auto normalisation = 2.f / static_cast<float> (input_size);
-    for (auto sample_index = 0; sample_index < kInputSize; ++sample_index)
-        input_buffer.setSample (
-            0, sample_index, (static_cast<float> (sample_index) * normalisation) - 1.f);
+
+    std::mt19937 rng {123};
+    std::uniform_real_distribution<float> distribution {-1.0f, 1.0f};
+
+    for (auto sample_index = 0; sample_index < input_size; ++sample_index)
+        input_buffer.setSample (0, sample_index, distribution (rng));
 
     return input_buffer;
 }
@@ -37,72 +41,6 @@ void FillStageBuffersHalfWay (StageBuffers & stage_buffers, int input_size)
 // DIVISIONS,
 // NUM PHASES,
 // PHASE
-void TestBedForwardDecompositionRadix2 (std::complex<float> * data,
-                                        std::size_t num_points,
-                                        std::size_t num_segments,
-                                        std::size_t num_steps,
-                                        std::size_t current_step)
-{
-    jassert (num_segments > 0 && juce::isPowerOfTwo (num_segments));
-    jassert (num_points > 0 && juce::isPowerOfTwo (num_points));
-    jassert (num_steps > 0 && num_steps <= num_points && juce::isPowerOfTwo (num_steps));
-    jassert (current_step < num_steps);
-
-    auto segment_num_points = num_points / num_segments;
-    auto half_num_points = segment_num_points / 2;
-    auto step_size = half_num_points / num_steps;
-    auto start_index = current_step * step_size;
-    auto w_n = std::exp (std::complex<float> (
-        0.0f, -juce::MathConstants<float>::twoPi / static_cast<float> (segment_num_points)));
-
-    for (auto segment_index = 0; segment_index < num_segments; ++segment_index)
-    {
-        auto segment = &data [segment_index * segment_num_points];
-        for (auto point_index = start_index; point_index < start_index + step_size; ++point_index)
-        {
-            jassert (half_num_points + point_index < segment_num_points);
-            auto point = segment [point_index];
-
-            segment [point_index] += segment [half_num_points + point_index];
-            segment [half_num_points + point_index] =
-                (point - segment [half_num_points + point_index]) *
-                std::pow (w_n, std::complex<float> {static_cast<float> (point_index), 0.0f});
-        }
-    }
-}
-
-void TestBedInverseDecompositionRadix2 (std::complex<float> * data,
-                                        std::size_t num_points,
-                                        std::size_t num_segments,
-                                        std::size_t num_steps,
-                                        std::size_t current_step)
-{
-    jassert (num_segments > 0 && juce::isPowerOfTwo (num_segments));
-    jassert (num_points > 0 && juce::isPowerOfTwo (num_points));
-    jassert (num_steps > 0 && num_steps <= num_points && juce::isPowerOfTwo (num_steps));
-    jassert (current_step < num_steps);
-
-    auto segment_num_points = num_points / num_segments;
-    auto half_num_points = segment_num_points / 2;
-    auto step_size = half_num_points / num_steps;
-    auto start_index = current_step * step_size;
-    auto w_n = std::exp (std::complex<float> (
-        0.0f, juce::MathConstants<float>::twoPi / static_cast<float> (segment_num_points)));
-
-    for (auto segment_index = 0; segment_index < num_segments; ++segment_index)
-    {
-        auto segment = &data [segment_index * segment_num_points];
-        for (auto point_index = start_index; point_index < start_index + step_size; ++point_index)
-        {
-            jassert (half_num_points + point_index < segment_num_points);
-            auto b_n = segment [point_index + half_num_points] *
-                       std::pow (w_n, std::complex<float> {static_cast<float> (point_index), 0.0f});
-
-            segment [half_num_points + point_index] = (segment [point_index] - b_n) * 0.5f;
-            segment [point_index] = (segment [point_index] + b_n) * 0.5f;
-        }
-    }
-}
 
 static void HandleStageA (int num_decompositions,
                           int block_size,
@@ -118,7 +56,9 @@ static void HandleStageA (int num_decompositions,
             std::complex<float> {input_buffer.getSample (0, stage_index + sample_index), 0.f};
 
     // Level 0 decompositions happen in every phase
-    TestBedForwardDecompositionRadix2 (stage_a, kFFTSize, 1, kNumBlocks, phase);
+    auto twiddle_factors = CreateTwiddleFactors (kFFTSize);
+    fft_decomposition::SegmentedForwardDecompositionRadix2 (
+        stage_a, kFFTSize, 1, kNumBlocks, phase, twiddle_factors [0]);
 
     for (auto decomposition_level = 1; decomposition_level < num_decompositions;
          ++decomposition_level)
@@ -128,8 +68,8 @@ static void HandleStageA (int num_decompositions,
         if (phase >= kNumBlocks - num_steps)
         {
             auto relative_phase = phase % num_steps;
-            TestBedForwardDecompositionRadix2 (
-                stage_a, kFFTSize, num_segments, num_steps, relative_phase);
+            fft_decomposition::SegmentedForwardDecompositionRadix2 (
+                stage_a, kFFTSize, num_segments, num_steps, relative_phase, twiddle_factors [0]);
         }
     }
 }
@@ -137,6 +77,7 @@ static void HandleStageA (int num_decompositions,
 static void HandleStageC (int num_decompositions, StageBuffers & stage_buffers, int phase)
 {
     auto stage_c = stage_buffers.GetStage (StageBuffers::kC)->GetWritePointer (0);
+    auto twiddle_factors = CreateTwiddleFactors (kFFTSize);
 
     for (auto decomposition_level = num_decompositions - 1; decomposition_level >= 1;
          --decomposition_level)
@@ -144,11 +85,13 @@ static void HandleStageC (int num_decompositions, StageBuffers & stage_buffers, 
         auto num_segments = static_cast<int> (std::pow (2, decomposition_level));
         auto num_steps = kNumBlocks / num_segments;
         if (phase < num_steps)
-            TestBedInverseDecompositionRadix2 (stage_c, kFFTSize, num_segments, num_steps, phase);
+            fft_decomposition::SegmentedInverseDecompositionRadix2 (
+                stage_c, kFFTSize, num_segments, num_steps, phase, twiddle_factors [1]);
     }
 
     // Level 0 decompositions happen in every phase
-    TestBedInverseDecompositionRadix2 (stage_c, kFFTSize, 1, kNumBlocks, phase);
+    fft_decomposition::SegmentedInverseDecompositionRadix2 (
+        stage_c, kFFTSize, 1, kNumBlocks, phase, twiddle_factors [1]);
 }
 
 TEST_CASE ("decomposing a 16b partition")
