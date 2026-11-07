@@ -1,5 +1,6 @@
 #pragma once
 
+#include <juce_dsp/juce_dsp.h>
 namespace zones
 {
 class UPCWorker
@@ -9,13 +10,23 @@ public:
                int partition_size_blocks,
                juce::dsp::AudioBlock<const float> ir_segment);
 
-    void SignalDoConvolution (const juce::dsp::AudioBlock<const float> & new_samples);
-
-    juce::dsp::AudioBlock<const float> GetProcessedSamplesAndSwitchBuffer ();
+    void Process (const juce::dsp::ProcessContextReplacing<float> & replacing);
 
     void Reset ();
 
 private:
-    std::vector<ComplexBuffer> filter_partitions_;
+    void SignalDoConvolution ();
+
+    juce::dsp::AudioBlock<const float> GetProcessedSamplesAndSwitchBuffer ();
+
+    int partition_size_samples_ {};
+
+    juce::AudioBuffer<float> scratch_buffer_ {};
+
+    UniformPartitionedConvolver upc_;
+
+    juce::SpinLock spin_lock_;
+    std::array<juce::AudioBuffer<float>, 2> double_buffers_;
+    int worker_buffer_index_ = 0;
 };
 }
