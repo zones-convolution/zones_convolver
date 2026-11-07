@@ -9,6 +9,10 @@ public:
                int partition_size_blocks,
                juce::dsp::AudioBlock<const float> ir_segment);
 
+    void SignalDoConvolution (const juce::dsp::AudioBlock<const float> & new_samples);
+
+    juce::dsp::AudioBlock<const float> GetProcessedSamplesAndSwitchBuffer ();
+
     void Reset ();
 
 private:
